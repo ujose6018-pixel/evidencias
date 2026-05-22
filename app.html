@@ -1,1 +1,1068 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workspace con Cámara - Supabase</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-pulse-custom { animation: pulse 1s infinite; }
+    .animate-spin-custom { animation: spin 1s linear infinite; }
+    .animate-flash { animation: pulse 0.2s ease-out; }
+    .glass {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 font-sans">
+  <!-- Toast Notificaciones -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-2xl flex items-center gap-3 border hidden transition-all duration-300"></div>
 
+  <!-- Lightbox / Visor de Fotos -->
+  <div id="lightbox" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out hidden">
+    <img id="lightbox-img" class="max-h-[90vh] max-w-full rounded-2xl shadow-2xl object-contain" alt="Evidencia Ampliada" />
+    <div class="absolute bottom-6 glass px-4 py-2 rounded-full text-[11px] text-slate-400">
+      Toca cualquier punto para cerrar la vista
+    </div>
+  </div>
+
+  <!-- Barra superior de Navegación -->
+  <nav class="glass border-b border-slate-800 px-4 py-3.5 sticky top-0 z-40 shadow-lg">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="bg-gradient-to-br from-blue-600/20 to-purple-600/20 p-2.5 rounded-2xl border border-blue-500/30">
+          <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base font-bold flex items-center gap-2">
+            Workspace con Cámara <span class="text-[9px] uppercase font-mono tracking-wider bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 px-2 py-0.5 rounded-full">Supabase</span>
+          </h1>
+          <p class="text-[10px] text-slate-400">Genera informes capturando fotos al instante o cargándolas de tu galería</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button id="btn-toggle-credentials" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/30">
+          ⚙️ Cambiar Credenciales
+        </button>
+
+        <button id="btn-back-admin" class="glass hover:bg-slate-800/50 border border-slate-700 text-slate-200 text-xs px-3.5 py-1.5 rounded-xl transition hidden">
+          ← Volver al Panel
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- VISTA 1: PANEL ADMINISTRATIVO -->
+  <div id="admin-view">
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Formulario y Captura de Evidencias -->
+      <div class="lg:col-span-7 flex flex-col gap-6">
+        
+        <!-- Credenciales de Supabase -->
+        <div id="real-mode-config" class="bg-gradient-to-br from-emerald-950/40 to-teal-950/40 border border-emerald-700/40 p-5 rounded-2xl space-y-4">
+          <h3 class="text-sm font-bold text-emerald-200 flex items-center gap-2">
+            🔑 Configuración de Almacenamiento (Supabase)
+          </h3>
+          <div class="grid grid-cols-1 gap-3 text-[11px]">
+            <div>
+              <label class="block text-slate-400 mb-1">Supabase URL</label>
+              <input id="supabase-url" type="text" placeholder="https://<project-ref>.supabase.co" value="https://db.snqfoqslgxelisezeqqc.supabase.co" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-emerald-500 font-mono transition-all" />
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Supabase Public Key (Anon Key)</label>
+              <input id="supabase-key" type="password" placeholder="sb_publishable_..." value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNucWZvcXNsZ3hlbGlzZXplcXFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwNzE5NjcsImV4cCI6MjA2MzY0Nzk2N30.example" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-emerald-500 font-mono transition-all" />
+            </div>
+          </div>
+          
+          <!-- Estado de Conexión -->
+          <div class="bg-slate-900/70 border border-slate-700 rounded-xl p-3">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <div id="connection-indicator" class="w-3 h-3 rounded-full bg-slate-500"></div>
+                <span id="connection-status-text" class="text-xs text-slate-400">Desconectado</span>
+              </div>
+              <button id="btn-verify-connection" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-[10px] font-bold py-1.5 px-3 rounded-lg transition-all">
+                🔍 Verificar Conexión
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-4 pt-1">
+            <button id="btn-auth" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-2 px-4 rounded-xl text-[11px] transition-all shadow-lg hover:shadow-emerald-500/25">
+              🔐 Conectar a Supabase
+            </button>
+            <span id="user-email" class="text-xs text-green-400 hidden">Conectado: <strong>Supabase</strong></span>
+          </div>
+        </div>
+
+        <!-- Formulario del Informe Técnico -->
+        <div class="bg-slate-950/70 backdrop-blur-xl border border-slate-800/70 rounded-3xl p-6 shadow-2xl space-y-5">
+          <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+            📝 Informe y Registro de Trabajo
+          </h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label class="block text-slate-400 font-semibold mb-1">Nombre del Cliente / Razón Social</label>
+              <input id="client-name" type="text" placeholder="Ej. Condominio San Ignacio" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" />
+            </div>
+            <div>
+              <label class="block text-slate-400 font-semibold mb-1">Título de la Tarea / Obra</label>
+              <input id="project-title" type="text" placeholder="Ej. Saneamiento y Pintado de Tuberías" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" />
+            </div>
+          </div>
+
+          <div class="text-xs">
+            <label class="block text-slate-400 font-semibold mb-1">Cuerpo / Descripción del Informe</label>
+            <textarea id="report-text" rows="4" placeholder="Describe de forma cronológica las tareas realizadas, reparaciones hechas, materiales usados..." class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"></textarea>
+          </div>
+
+          <!-- SECCIÓN HÍBRIDA DE CAPTURA DE FOTOS -->
+          <div class="border border-slate-800 rounded-2xl overflow-hidden bg-slate-900/30">
+            
+            <!-- Selector de origen -->
+            <div class="bg-slate-900/80 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-300">Evidencia Fotográfica</span>
+              
+              <div class="flex bg-slate-950/80 p-1.5 rounded-xl border border-slate-800 text-[10px]">
+                <button id="btn-device" type="button" class="px-3.5 py-1.5 rounded-lg font-semibold transition bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                  📁 Galería Interna
+                </button>
+                <button id="btn-camera" type="button" class="px-3.5 py-1.5 rounded-lg font-semibold transition text-slate-400">
+                  📷 Tomar Foto
+                </button>
+              </div>
+            </div>
+
+            <!-- Área Dinámica -->
+            <div class="p-4">
+              <div id="device-area">
+                <div id="file-drop" class="border-2 border-dashed border-slate-700 rounded-2xl py-8 px-4 text-center hover:border-blue-500 bg-slate-950/30 cursor-pointer transition-all duration-300 flex flex-col items-center justify-center hover:bg-slate-950/50">
+                  <input id="file-input" type="file" multiple accept="image/*" class="hidden" />
+                  <svg class="w-10 h-10 text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  <p class="text-sm font-semibold text-slate-300 mt-2">Buscar fotos en el almacenamiento</p>
+                  <p class="text-[11px] text-slate-500 mt-1">Soporta múltiples archivos JPG, PNG, WEBP</p>
+                </div>
+              </div>
+
+              <div id="camera-area" class="hidden">
+                <div class="relative rounded-2xl overflow-hidden bg-black flex flex-col items-center border border-slate-800">
+                  <div id="flash" class="absolute inset-0 bg-white z-20 hidden"></div>
+                  <div id="camera-off" class="w-full aspect-video flex flex-col items-center justify-center p-8 text-center">
+                    <svg class="w-12 h-12 text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812-1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <p class="text-sm font-semibold text-slate-300 mt-3">La cámara está desactivada</p>
+                    <p id="camera-error" class="text-[11px] text-red-400 mt-2 max-w-xs hidden"></p>
+                    <button id="btn-start-camera" type="button" class="mt-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg">
+                      Activar Lente
+                    </button>
+                  </div>
+                  <div id="camera-on" class="relative w-full aspect-video bg-black items-center justify-center hidden">
+                    <video id="video" autoplay playsinline class="w-full h-full object-cover"></video>
+                    <div class="absolute bottom-5 inset-x-0 flex items-center justify-center gap-5 z-10 px-5">
+                      <button id="btn-switch-camera" type="button" class="glass hover:bg-slate-800 text-white p-3.5 rounded-full border border-slate-700 transition-all hover:scale-110" title="Girar cámara">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 15H19" />
+                        </svg>
+                      </button>
+                      <button id="btn-capture" type="button" class="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 active:scale-90 text-white w-14 h-14 rounded-full border-4 border-white/90 flex items-center justify-center shadow-2xl transition-all hover:shadow-red-500/40">
+                        <div class="w-5 h-5 rounded-full bg-white"></div>
+                      </button>
+                      <button id="btn-stop-camera" type="button" class="glass hover:bg-slate-800 text-red-400 text-sm py-2 px-4 rounded-full border border-slate-700 transition-all font-bold">
+                        Apagar
+                      </button>
+                    </div>
+                  </div>
+                  <canvas id="canvas" class="hidden"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Grid de imágenes capturadas / subidas -->
+            <div id="images-container" class="px-4 pb-4 hidden">
+              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Fotos Adjuntas (<span id="images-count">0</span>)</p>
+              <div id="images-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3"></div>
+            </div>
+          </div>
+
+          <!-- Botón de Sincronización final -->
+          <button id="btn-upload" class="w-full py-3.5 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white hover:shadow-emerald-500/30">
+            💾 Guardar en Supabase y Generar Enlace Único
+          </button>
+        </div>
+      </div>
+
+      <!-- Directorio de Trabajos Guardados (Lado Derecho) -->
+      <div class="lg:col-span-5 space-y-6">
+        <div class="bg-slate-950/70 backdrop-blur-xl border border-slate-800/70 rounded-3xl p-6 shadow-2xl flex flex-col min-h-[450px]">
+          <div class="mb-4">
+            <h2 class="text-sm font-bold text-slate-200">
+              📁 Historial de Informes Registrados
+            </h2>
+            <p class="text-[11px] text-slate-400 mt-1">Listado de proyectos almacenados en Supabase</p>
+          </div>
+
+          <div id="no-projects" class="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-500">
+            <svg class="w-10 h-10 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            </svg>
+            <p class="text-sm font-semibold mt-3 text-slate-400">No tienes carpetas de trabajos guardadas</p>
+            <p class="text-[11px] text-slate-600 max-w-[200px] mt-2">Completa el informe y adjunta fotos para empezar.</p>
+          </div>
+
+          <div id="projects-container" class="space-y-3 flex-1 overflow-y-auto max-h-[400px] pr-2 hidden">
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- VISTA 2: PORTAL INTERMEDIARIO DEL CLIENTE -->
+  <div id="client-view" class="hidden">
+    <main class="flex-1 bg-slate-950/50 p-4 lg:p-8">
+      <div class="max-w-4xl mx-auto glass border border-slate-800 rounded-2xl p-3 mb-6 flex items-center gap-3 text-xs">
+        <span class="text-slate-500 pl-2">Enlace compartido único:</span>
+        <div class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-emerald-400 font-mono select-all truncate" id="share-link"></div>
+        <button id="btn-copy-client-link" class="bg-slate-800 hover:bg-slate-750 text-slate-300 py-2 px-4 rounded-xl font-semibold text-xs shrink-0 transition-all">
+          Copiar Link
+        </button>
+      </div>
+
+      <div class="max-w-4xl mx-auto bg-slate-950/70 backdrop-blur-xl rounded-3xl border border-slate-800 shadow-2xl overflow-hidden">
+        <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 md:p-8 border-b border-slate-800">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="text-[10px] uppercase font-mono tracking-wider text-green-400 font-bold">Informe Técnico Registrado en Drive</span>
+              </div>
+              <h2 id="client-project-title" class="text-xl md:text-2xl font-bold text-slate-50 mt-3"></h2>
+            </div>
+            <div class="text-left sm:text-right">
+              <p class="text-[10px] text-slate-400 font-mono">ID de Carpeta:</p>
+              <p id="client-project-id" class="text-[10px] text-slate-500 font-mono truncate max-w-[180px]"></p>
+            </div>
+          </div>
+
+          <div id="client-meta" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-5 border-t border-slate-800 text-sm hidden">
+            <div class="flex items-center gap-2 text-slate-300">
+              <span>Empresa/Cliente:</span>
+              <strong id="client-name-text" class="text-slate-100"></strong>
+            </div>
+            <div class="flex items-center gap-2 text-slate-300 sm:justify-end">
+              <span>Fecha de Emisión:</span>
+              <strong id="client-date" class="text-slate-100"></strong>
+            </div>
+          </div>
+        </div>
+
+        <div id="client-loading" class="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
+          <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin-custom"></div>
+          <p class="text-sm font-semibold text-slate-400">Consultando API de Google Drive...</p>
+        </div>
+
+        <div id="client-content" class="p-6 md:p-8 space-y-6 hidden">
+          <div class="space-y-3">
+            <h3 class="text-xs uppercase font-mono tracking-wider text-slate-400 font-bold border-b border-slate-800 pb-3 flex items-center gap-2">
+              <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Resumen Escrito del Servicio
+            </h3>
+            <div id="client-report" class="bg-slate-950/85 p-6 rounded-2xl border border-slate-800 text-sm leading-relaxed text-slate-300 whitespace-pre-wrap"></div>
+          </div>
+
+          <div class="space-y-3">
+            <h3 class="text-xs uppercase font-mono tracking-wider text-slate-400 font-bold border-b border-slate-800 pb-3">
+              🖼️ Evidencias Fotográficas Adjuntas
+            </h3>
+            <div id="client-photos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4"></div>
+          </div>
+        </div>
+
+        <div id="client-not-found" class="p-12 text-center text-slate-500 hidden">
+          <p class="text-sm font-semibold">No se encontraron datos públicos del proyecto en la ruta especificada.</p>
+        </div>
+
+        <div class="bg-slate-950 p-6 text-center border-t border-slate-800 text-[11px] text-slate-500">
+          <p>© <span id="year"></span> Portal Técnico Integrado.</p>
+          <p class="mt-1 text-[10px] text-slate-600">Almacenamiento directo sobre la API de Google Drive.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- CONSOLA DE INTERCAMBIOS DE RED -->
+  <footer class="bg-slate-950/70 backdrop-blur-xl border-t border-slate-800 p-4">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase font-mono">
+          📟 Consola del Sistema e Interacciones HTTP (Drive API v3)
+        </h3>
+        <button id="btn-clear-logs" class="text-slate-600 hover:text-slate-400 text-[10px] font-semibold transition-colors">
+          Limpiar Logs
+        </button>
+      </div>
+      <div id="logs-container" class="bg-slate-900 border border-slate-800 rounded-2xl p-4 font-mono text-[10px] text-slate-400 h-28 overflow-y-auto space-y-2">
+        <p class="text-slate-600 italic">Consola inactiva. Rellena el formulario o captura fotos para iniciar las transmisiones de red.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let supabase = null;
+    
+    const state = {
+      view: 'admin',
+      projects: [],
+      selectedProjectId: null,
+      supabaseUrl: localStorage.getItem('supabase_url') || 'https://db.snqfoqslgxelisezeqqc.supabase.co',
+      supabaseKey: localStorage.getItem('supabase_key') || '',
+      clientName: '',
+      projectTitle: '',
+      reportText: '',
+      imageFiles: [],
+      imageSource: 'device',
+      cameraActive: false,
+      facingMode: 'environment',
+      cameraError: null,
+      flashActive: false,
+      isUploading: false,
+      logs: [],
+      toast: null,
+      lightboxImg: null,
+      stream: null,
+      video: null,
+      canvas: null,
+      credentialsVisible: true
+    };
+
+    const elements = {
+      toast: document.getElementById('toast'),
+      lightbox: document.getElementById('lightbox'),
+      lightboxImg: document.getElementById('lightbox-img'),
+      btnToggleCredentials: document.getElementById('btn-toggle-credentials'),
+      btnBackAdmin: document.getElementById('btn-back-admin'),
+      realModeConfig: document.getElementById('real-mode-config'),
+      supabaseUrlInput: document.getElementById('supabase-url'),
+      supabaseKeyInput: document.getElementById('supabase-key'),
+      btnAuth: document.getElementById('btn-auth'),
+      userEmail: document.getElementById('user-email'),
+      connectionIndicator: document.getElementById('connection-indicator'),
+      connectionStatusText: document.getElementById('connection-status-text'),
+      btnVerifyConnection: document.getElementById('btn-verify-connection'),
+      clientNameInput: document.getElementById('client-name'),
+      projectTitleInput: document.getElementById('project-title'),
+      reportTextInput: document.getElementById('report-text'),
+      btnDevice: document.getElementById('btn-device'),
+      btnCamera: document.getElementById('btn-camera'),
+      deviceArea: document.getElementById('device-area'),
+      cameraArea: document.getElementById('camera-area'),
+      fileDrop: document.getElementById('file-drop'),
+      fileInput: document.getElementById('file-input'),
+      flash: document.getElementById('flash'),
+      cameraOff: document.getElementById('camera-off'),
+      cameraOn: document.getElementById('camera-on'),
+      cameraError: document.getElementById('camera-error'),
+      btnStartCamera: document.getElementById('btn-start-camera'),
+      btnSwitchCamera: document.getElementById('btn-switch-camera'),
+      btnCapture: document.getElementById('btn-capture'),
+      btnStopCamera: document.getElementById('btn-stop-camera'),
+      video: document.getElementById('video'),
+      canvas: document.getElementById('canvas'),
+      imagesContainer: document.getElementById('images-container'),
+      imagesCount: document.getElementById('images-count'),
+      imagesGrid: document.getElementById('images-grid'),
+      btnUpload: document.getElementById('btn-upload'),
+      noProjects: document.getElementById('no-projects'),
+      projectsContainer: document.getElementById('projects-container'),
+      adminView: document.getElementById('admin-view'),
+      clientView: document.getElementById('client-view'),
+      shareLink: document.getElementById('share-link'),
+      btnCopyClientLink: document.getElementById('btn-copy-client-link'),
+      clientProjectTitle: document.getElementById('client-project-title'),
+      clientProjectId: document.getElementById('client-project-id'),
+      clientMeta: document.getElementById('client-meta'),
+      clientNameText: document.getElementById('client-name-text'),
+      clientDate: document.getElementById('client-date'),
+      clientLoading: document.getElementById('client-loading'),
+      clientContent: document.getElementById('client-content'),
+      clientReport: document.getElementById('client-report'),
+      clientPhotos: document.getElementById('client-photos'),
+      clientNotFound: document.getElementById('client-not-found'),
+      year: document.getElementById('year'),
+      logsContainer: document.getElementById('logs-container'),
+      btnClearLogs: document.getElementById('btn-clear-logs')
+    };
+
+    function addLog(service, detail, type = 'INFO') {
+      const timestamp = new Date().toLocaleTimeString();
+      state.logs.unshift({ id: Date.now() + Math.random(), timestamp, service, detail, type });
+      renderLogs();
+    }
+
+    function renderLogs() {
+      if (state.logs.length === 0) {
+        elements.logsContainer.innerHTML = '<p class="text-slate-600 italic">Consola inactiva. Rellena el formulario o captura fotos para iniciar las transmisiones de red.</p>';
+        return;
+      }
+      elements.logsContainer.innerHTML = state.logs.map(log => {
+        const typeColors = {
+          'ERROR': 'bg-red-500/20 text-red-400',
+          'SUCCESS': 'bg-green-500/20 text-green-400',
+          'INFO': 'bg-blue-500/20 text-blue-400'
+        };
+        return `
+          <div class="border-b border-slate-800/40 pb-1.5 last:border-0 flex items-start gap-2">
+            <span class="text-slate-600 shrink-0">[${log.timestamp}]</span>
+            <span class="px-1.5 py-0.5 rounded text-[8px] font-bold shrink-0 ${typeColors[log.type]}">${log.service}</span>
+            <pre class="whitespace-pre-wrap flex-1 text-slate-300 font-mono">${log.detail}</pre>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function showToast(message, type = 'success') {
+      const bg = type === 'error' 
+        ? 'bg-gradient-to-r from-red-950 to-red-900 border-red-500 text-red-100' 
+        : 'bg-gradient-to-r from-slate-800 to-slate-900 border-green-500 text-green-100';
+      const icon = type === 'error' ? '⚠️' : '✨';
+      elements.toast.innerHTML = `<span>${icon}</span><span class="text-sm font-semibold">${message}</span>`;
+      elements.toast.className = `fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-2xl flex items-center gap-3 border transition-all duration-300 ${bg}`;
+      elements.toast.classList.remove('hidden');
+      setTimeout(() => elements.toast.classList.add('hidden'), 4000);
+    }
+
+    function updateConnectionStatus(status) {
+      const indicator = elements.connectionIndicator;
+      const statusText = elements.connectionStatusText;
+      
+      switch(status) {
+        case 'connected':
+          indicator.className = 'w-3 h-3 rounded-full bg-green-500 animate-pulse-custom shadow-lg shadow-green-500/40';
+          statusText.textContent = 'Conexión estable';
+          statusText.className = 'text-xs text-green-400 font-semibold';
+          break;
+        case 'unstable':
+          indicator.className = 'w-3 h-3 rounded-full bg-orange-500 animate-pulse-custom shadow-lg shadow-orange-500/40';
+          statusText.textContent = 'Conexión inestable';
+          statusText.className = 'text-xs text-orange-400 font-semibold';
+          break;
+        case 'disconnected':
+        default:
+          indicator.className = 'w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/40';
+          statusText.textContent = 'Sin conexión';
+          statusText.className = 'text-xs text-red-400 font-semibold';
+          break;
+      }
+    }
+
+    async function verifySupabaseConnection() {
+      addLog('Verificación Conexión', 'Iniciando verificación de conexión con Supabase...', 'INFO');
+      
+      const url = elements.supabaseUrlInput.value;
+      const key = elements.supabaseKeyInput.value;
+      
+      if (!url || !key) {
+        updateConnectionStatus('disconnected');
+        addLog('Verificación Conexión', 'Faltan credenciales de Supabase. La app usará almacenamiento local.', 'INFO');
+        showToast('Usando almacenamiento local (configura Supabase para nube)', 'success');
+        return;
+      }
+
+      try {
+        supabase = window.supabase.createClient(url, key);
+        
+        const { data, error } = await supabase.from('projects').select('count', { count: 'exact', head: true });
+        
+        if (error) {
+          updateConnectionStatus('unstable');
+          addLog('Verificación Conexión', `Conectado pero verifica tu tabla "projects": ${error.message}`, 'INFO');
+          showToast('Conectado, pero configura tu tabla "projects"', 'error');
+        } else {
+          updateConnectionStatus('connected');
+          addLog('Verificación Conexión', '¡Conexión con Supabase establecida correctamente!', 'SUCCESS');
+          showToast('¡Conexión estable con Supabase!', 'success');
+          elements.userEmail.classList.remove('hidden');
+        }
+      } catch (error) {
+        updateConnectionStatus('disconnected');
+        addLog('Verificación Conexión', `No se pudo conectar a Supabase. Usando almacenamiento local: ${error.message}`, 'INFO');
+        showToast('Usando almacenamiento local (configura Supabase después)', 'success');
+      }
+    }
+
+    async function connectToSupabase() {
+      const url = elements.supabaseUrlInput.value;
+      const key = elements.supabaseKeyInput.value;
+      
+      if (!url || !key) {
+        showToast('Por favor ingresa URL y Public Key', 'error');
+        return;
+      }
+
+      try {
+        localStorage.setItem('supabase_url', url);
+        localStorage.setItem('supabase_key', key);
+        
+        state.supabaseUrl = url;
+        state.supabaseKey = key;
+        
+        await verifySupabaseConnection();
+      } catch (error) {
+        addLog('Supabase Auth', `Error: ${error.message}`, 'ERROR');
+      }
+    }
+
+    function renderImages() {
+      if (state.imageFiles.length === 0) {
+        elements.imagesContainer.classList.add('hidden');
+        return;
+      }
+      elements.imagesContainer.classList.remove('hidden');
+      elements.imagesCount.textContent = state.imageFiles.length;
+      elements.imagesGrid.innerHTML = state.imageFiles.map(img => `
+        <div class="relative aspect-square rounded-xl overflow-hidden border border-slate-700 group bg-slate-950">
+          <img src="${img.base64}" alt="${img.name}" class="w-full h-full object-cover" />
+          <div class="absolute top-1.5 left-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[8px] text-slate-300 truncate max-w-[80%]">
+            ${img.id.startsWith('cam') ? '📷' : '📁'}
+          </div>
+          <button onclick="removeImage('${img.id}')" class="absolute inset-0 bg-gradient-to-t from-red-950/95 to-red-900/80 text-red-100 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all text-xs font-bold">
+            Quitar
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function renderProjects() {
+      if (state.projects.length === 0) {
+        elements.noProjects.classList.remove('hidden');
+        elements.projectsContainer.classList.add('hidden');
+        return;
+      }
+      elements.noProjects.classList.add('hidden');
+      elements.projectsContainer.classList.remove('hidden');
+      elements.projectsContainer.innerHTML = state.projects.map(p => `
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-3 hover:border-slate-700 transition-all hover:shadow-lg">
+          <div class="flex justify-between items-start gap-3">
+            <div>
+              <span class="text-[9px] text-emerald-400 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-3 py-0.5 rounded-full font-semibold font-mono">
+                Supabase
+              </span>
+              <h4 class="text-sm font-bold text-slate-100 mt-2">${p.projectTitle}</h4>
+              <p class="text-xs text-slate-400 mt-1">👤 ${p.clientName}</p>
+            </div>
+            <button onclick="deleteProject('${p.id}')" class="text-slate-600 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-950/30">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+          <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between gap-2 text-xs">
+            <span class="text-slate-500">📅 ${p.date}</span>
+            <div class="flex gap-2">
+              <button onclick="viewClient('${p.id}')" class="bg-slate-800 hover:bg-slate-750 text-slate-200 py-2 px-3 rounded-xl border border-slate-700 flex items-center gap-1.5 font-semibold transition-all">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                Ver Portal
+              </button>
+              <button onclick="copyLink('${p.id}')" class="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600 hover:to-indigo-600 text-blue-300 hover:text-white py-2 px-3 rounded-xl flex items-center gap-1.5 font-semibold transition-all">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+                Compartir Enlace
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function startCamera() {
+      state.cameraError = null;
+      elements.cameraError.classList.add('hidden');
+      elements.cameraOff.classList.add('hidden');
+      addLog('Cámara Nativa', 'Iniciando solicitud de acceso al stream de video...', 'INFO');
+
+      if (state.stream) {
+        stopCamera();
+      }
+
+      try {
+        const constraints = {
+          video: {
+            facingMode: state.facingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false
+        };
+
+        state.stream = await navigator.mediaDevices.getUserMedia(constraints);
+        elements.video.srcObject = state.stream;
+        elements.cameraOn.classList.remove('hidden');
+        state.cameraActive = true;
+        addLog('Cámara Nativa', `Cámara iniciada con éxito. Modo: ${state.facingMode === 'user' ? 'Frontal' : 'Trasera'}`, 'SUCCESS');
+      } catch (err) {
+        state.cameraError = 'No se pudo acceder a la cámara. Por favor comprueba los permisos de tu navegador.';
+        elements.cameraError.textContent = state.cameraError;
+        elements.cameraError.classList.remove('hidden');
+        elements.cameraOff.classList.remove('hidden');
+        elements.cameraOn.classList.add('hidden');
+        addLog('Cámara Error', err.message, 'ERROR');
+      }
+    }
+
+    function stopCamera() {
+      if (state.stream) {
+        state.stream.getTracks().forEach(track => track.stop());
+        state.stream = null;
+      }
+      elements.video.srcObject = null;
+      elements.cameraOn.classList.add('hidden');
+      elements.cameraOff.classList.remove('hidden');
+      state.cameraActive = false;
+    }
+
+    function toggleFacingMode() {
+      state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
+      addLog('Cámara', `Cambiando dirección de lente a: ${state.facingMode === 'user' ? 'Delantero' : 'Trasero'}`, 'INFO');
+      if (state.cameraActive) {
+        startCamera();
+      }
+    }
+
+    function capturePhoto() {
+      if (!elements.video || !elements.canvas) return;
+      elements.flash.classList.remove('hidden');
+      setTimeout(() => elements.flash.classList.add('hidden'), 200);
+
+      const video = elements.video;
+      const canvas = elements.canvas;
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const base64Image = canvas.toDataURL('image/jpeg', 0.85);
+      const estimatedSizeKB = Math.round((base64Image.length * 3) / 4 / 1024);
+      const photoName = `CAP_CAM_${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`;
+
+      state.imageFiles.push({
+        id: 'cam-' + Date.now(),
+        name: photoName,
+        size: `${estimatedSizeKB} KB`,
+        base64: base64Image
+      });
+
+      renderImages();
+      addLog('Cámara Captura', `Foto capturada con éxito: ${photoName} (${estimatedSizeKB} KB)`, 'SUCCESS');
+      showToast('¡Foto capturada e incorporada!');
+    }
+
+    function handleFilesSelected(files) {
+      Array.from(files).forEach(file => {
+        if (!file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          state.imageFiles.push({
+            id: 'file-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+            name: file.name,
+            size: `${(file.size / 1024).toFixed(1)} KB`,
+            base64: reader.result
+          });
+          renderImages();
+          addLog('Archivo Cargado', `Imagen local agregada: ${file.name}`, 'INFO');
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function removeImage(id) {
+      state.imageFiles = state.imageFiles.filter(img => img.id !== id);
+      renderImages();
+    }
+
+    function viewClient(id) {
+      state.selectedProjectId = id;
+      state.view = 'client';
+      showClientView();
+      loadClientProject(id);
+    }
+
+    function copyLink(projectId) {
+      const link = `${window.location.origin}${window.location.pathname}?proyectoId=${projectId}`;
+      const tempInput = document.createElement('input');
+      tempInput.value = link;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      showToast('¡Enlace único copiado!');
+      addLog('UI', `Enlace compartido copiado al portapapeles: ${link}`, 'SUCCESS');
+    }
+
+    function toggleCredentials() {
+      state.credentialsVisible = !state.credentialsVisible;
+      if (state.credentialsVisible) {
+        elements.realModeConfig.classList.remove('hidden');
+      } else {
+        elements.realModeConfig.classList.add('hidden');
+      }
+    }
+
+    function deleteProject(projectId) {
+      state.projects = state.projects.filter(p => p.id !== projectId);
+      localStorage.setItem('drive_cam_projects', JSON.stringify(state.projects));
+      renderProjects();
+      showToast('Proyecto removido de tu panel.');
+    }
+
+    function showAdminView() {
+      state.view = 'admin';
+      elements.adminView.classList.remove('hidden');
+      elements.clientView.classList.add('hidden');
+      elements.btnBackAdmin.classList.add('hidden');
+    }
+
+    function showClientView() {
+      elements.adminView.classList.add('hidden');
+      elements.clientView.classList.remove('hidden');
+      elements.btnBackAdmin.classList.remove('hidden');
+      elements.shareLink.textContent = `${window.location.origin}${window.location.pathname}?proyectoId=${state.selectedProjectId}`;
+    }
+
+    async function loadClientProject(id) {
+      elements.clientLoading.classList.remove('hidden');
+      elements.clientContent.classList.add('hidden');
+      elements.clientNotFound.classList.add('hidden');
+      elements.clientMeta.classList.add('hidden');
+      elements.clientProjectTitle.textContent = 'Cargando datos...';
+      elements.clientProjectId.textContent = id;
+      addLog('Cliente View', `Solicitando lectura de carpeta: ${id}`, 'INFO');
+
+      const found = state.projects.find(p => p.id === id);
+      if (found) {
+        setTimeout(() => {
+          renderClientProject(found);
+          addLog('Cliente View', 'Detalle del proyecto cargado correctamente', 'SUCCESS');
+        }, 700);
+      } else {
+        elements.clientLoading.classList.add('hidden');
+        elements.clientNotFound.classList.remove('hidden');
+        addLog('Cliente View', 'No se encontró el proyecto.', 'ERROR');
+      }
+    }
+
+    function renderClientProject(data) {
+      elements.clientLoading.classList.add('hidden');
+      elements.clientContent.classList.remove('hidden');
+      elements.clientMeta.classList.remove('hidden');
+      elements.clientProjectTitle.textContent = data.projectTitle;
+      elements.clientNameText.textContent = data.clientName;
+      elements.clientDate.textContent = data.date;
+      elements.clientReport.textContent = data.reportText;
+      elements.clientPhotos.innerHTML = data.photos.map((url, idx) => `
+        <div onclick="showLightbox('${url}')" class="group relative aspect-video bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 hover:border-blue-500 cursor-zoom-in transition-all hover:shadow-lg">
+          <img src="${url}" alt="Evidencia ${idx + 1}" class="w-full h-full object-cover group-hover:scale-105 transition-all duration-300" />
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all flex items-end p-4">
+            <span class="text-xs text-slate-200 font-semibold">Evidencia fotográfica #${idx + 1}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function showLightbox(url) {
+      elements.lightboxImg.src = url;
+      elements.lightbox.classList.remove('hidden');
+    }
+
+    async function executeProjectCreation() {
+      if (!state.clientName || !state.projectTitle || !state.reportText) {
+        showToast('Por favor completa todos los datos obligatorios del informe.', 'error');
+        return;
+      }
+
+      state.isUploading = true;
+      elements.btnUpload.innerHTML = `
+        <div class="w-5 h-5 border-2 border-slate-300 border-t-white rounded-full animate-spin-custom"></div>
+        Guardando...
+      `;
+      elements.btnUpload.classList.remove('from-emerald-600', 'to-teal-600', 'hover:from-emerald-700', 'hover:to-teal-700');
+      elements.btnUpload.classList.add('bg-slate-800', 'text-slate-500', 'cursor-not-allowed');
+      elements.btnUpload.disabled = true;
+      addLog('Sincronizador', 'Construyendo estructura de datos...', 'INFO');
+
+      let photoUrls = state.imageFiles.map(img => img.base64);
+      let projectId = 'LOCAL-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+      let savedToSupabase = false;
+
+      try {
+        if (supabase && state.supabaseKey) {
+          try {
+            addLog('Supabase', 'Intentando guardar en Supabase...', 'INFO');
+            
+            const uploadedUrls = [];
+            for (let i = 0; i < state.imageFiles.length; i++) {
+              const img = state.imageFiles[i];
+              try {
+                const response = await fetch(img.base64);
+                const blob = await response.blob();
+                const fileName = `${Date.now()}-${img.name}`;
+                
+                const { error: uploadError } = await supabase.storage
+                  .from('project-photos')
+                  .upload(fileName, blob);
+                  
+                if (!uploadError) {
+                  const { data: urlData } = supabase.storage
+                    .from('project-photos')
+                    .getPublicUrl(fileName);
+                  uploadedUrls.push(urlData.publicUrl);
+                } else {
+                  uploadedUrls.push(img.base64);
+                }
+              } catch (e) {
+                uploadedUrls.push(img.base64);
+              }
+            }
+            
+            if (uploadedUrls.length > 0) {
+              photoUrls = uploadedUrls;
+            }
+
+            const { data, error } = await supabase
+              .from('projects')
+              .insert({
+                client_name: state.clientName,
+                project_title: state.projectTitle,
+                report_text: state.reportText,
+                photos: photoUrls,
+                created_at: new Date().toISOString()
+              })
+              .select();
+
+            if (!error && data && data.length > 0) {
+              projectId = data[0].id;
+              savedToSupabase = true;
+              addLog('Supabase', '¡Proyecto guardado en Supabase exitosamente!', 'SUCCESS');
+            }
+          } catch (supabaseError) {
+            addLog('Supabase Error', 'Fallo al guardar en Supabase, usando almacenamiento local', 'ERROR');
+          }
+        }
+
+        const newProject = {
+          id: projectId,
+          clientName: state.clientName,
+          projectTitle: state.projectTitle,
+          reportText: state.reportText,
+          date: new Date().toLocaleDateString(),
+          photos: photoUrls
+        };
+
+        state.projects.unshift(newProject);
+        localStorage.setItem('drive_cam_projects', JSON.stringify(state.projects));
+
+        state.clientName = '';
+        state.projectTitle = '';
+        state.reportText = '';
+        state.imageFiles = [];
+        elements.clientNameInput.value = '';
+        elements.projectTitleInput.value = '';
+        elements.reportTextInput.value = '';
+        renderImages();
+        renderProjects();
+
+        state.isUploading = false;
+        elements.btnUpload.innerHTML = '💾 Guardar y Generar Enlace Único';
+        elements.btnUpload.classList.remove('bg-slate-800', 'text-slate-500', 'cursor-not-allowed');
+        elements.btnUpload.classList.add('from-emerald-600', 'to-teal-600', 'hover:from-emerald-700', 'hover:to-teal-700');
+        elements.btnUpload.disabled = false;
+        
+        const message = savedToSupabase 
+          ? '¡Trabajo guardado en Supabase y localmente!' 
+          : '¡Trabajo guardado localmente (configura Supabase para nube)!';
+        showToast(message, savedToSupabase ? 'success' : 'success');
+        addLog('Sistema', `Proyecto guardado con ID: ${projectId}`, 'SUCCESS');
+        
+      } catch (error) {
+        const newProject = {
+          id: projectId,
+          clientName: state.clientName,
+          projectTitle: state.projectTitle,
+          reportText: state.reportText,
+          date: new Date().toLocaleDateString(),
+          photos: photoUrls
+        };
+
+        state.projects.unshift(newProject);
+        localStorage.setItem('drive_cam_projects', JSON.stringify(state.projects));
+
+        state.clientName = '';
+        state.projectTitle = '';
+        state.reportText = '';
+        state.imageFiles = [];
+        elements.clientNameInput.value = '';
+        elements.projectTitleInput.value = '';
+        elements.reportTextInput.value = '';
+        renderImages();
+        renderProjects();
+
+        state.isUploading = false;
+        elements.btnUpload.innerHTML = '💾 Guardar y Generar Enlace Único';
+        elements.btnUpload.classList.remove('bg-slate-800', 'text-slate-500', 'cursor-not-allowed');
+        elements.btnUpload.classList.add('from-emerald-600', 'to-teal-600', 'hover:from-emerald-700', 'hover:to-teal-700');
+        elements.btnUpload.disabled = false;
+        
+        addLog('Sistema', 'Guardado localmente exitosamente', 'SUCCESS');
+        showToast('¡Trabajo guardado localmente!', 'success');
+      }
+    }
+
+    function init() {
+      elements.year.textContent = new Date().getFullYear();
+
+      const saved = localStorage.getItem('drive_cam_projects');
+      if (saved) {
+        state.projects = JSON.parse(saved);
+      } else {
+        const defaultProjects = [{
+          id: 'SUPABASE-DEMO-001',
+          clientName: 'Consorcio Vial Metropolitano',
+          projectTitle: 'Reparación de Columnas de Soporte',
+          reportText: 'Se realizó el picado del hormigón deteriorado en la base de la columna de soporte #12. Se limpió el óxido de las armaduras de acero expuestas mediante cepillado mecánico y se aplicó un puente de adherencia epóxico. Finalmente, se rellenó la cavidad utilizando mortero cementicio de alta resistencia sin contracción estructural.',
+          date: new Date(Date.now() - 86400000 * 2).toLocaleDateString(),
+          photos: [
+            'https://images.unsplash.com/photo-1590069261209-f8e9b8642343?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=800&q=80'
+          ]
+        }];
+        state.projects = defaultProjects;
+        localStorage.setItem('drive_cam_projects', JSON.stringify(defaultProjects));
+      }
+      renderProjects();
+
+      const params = new URLSearchParams(window.location.search);
+      const projectId = params.get('proyectoId');
+
+      if (projectId) {
+        state.view = 'client';
+        state.selectedProjectId = projectId;
+        showClientView();
+        loadClientProject(projectId);
+      }
+
+      elements.supabaseUrlInput.value = state.supabaseUrl;
+      elements.supabaseKeyInput.value = state.supabaseKey;
+
+      elements.btnToggleCredentials.addEventListener('click', () => {
+        toggleCredentials();
+      });
+
+      elements.btnVerifyConnection.addEventListener('click', verifySupabaseConnection);
+      elements.btnAuth.addEventListener('click', connectToSupabase);
+
+      elements.supabaseUrlInput.addEventListener('input', (e) => {
+        state.supabaseUrl = e.target.value;
+        localStorage.setItem('supabase_url', state.supabaseUrl);
+      });
+
+      elements.supabaseKeyInput.addEventListener('input', (e) => {
+        state.supabaseKey = e.target.value;
+        localStorage.setItem('supabase_key', state.supabaseKey);
+      });
+
+      elements.btnBackAdmin.addEventListener('click', () => {
+        showAdminView();
+        state.selectedProjectId = null;
+      });
+
+      elements.clientNameInput.addEventListener('input', (e) => {
+        state.clientName = e.target.value;
+      });
+
+      elements.projectTitleInput.addEventListener('input', (e) => {
+        state.projectTitle = e.target.value;
+      });
+
+      elements.reportTextInput.addEventListener('input', (e) => {
+        state.reportText = e.target.value;
+      });
+
+      elements.btnDevice.addEventListener('click', () => {
+        state.imageSource = 'device';
+        stopCamera();
+        elements.btnDevice.classList.add('bg-gradient-to-r', 'from-emerald-600', 'to-teal-600', 'text-white');
+        elements.btnDevice.classList.remove('text-slate-400');
+        elements.btnCamera.classList.remove('bg-gradient-to-r', 'from-emerald-600', 'to-teal-600', 'text-white');
+        elements.btnCamera.classList.add('text-slate-400');
+        elements.deviceArea.classList.remove('hidden');
+        elements.cameraArea.classList.add('hidden');
+      });
+
+      elements.btnCamera.addEventListener('click', () => {
+        state.imageSource = 'camera';
+        elements.btnCamera.classList.add('bg-gradient-to-r', 'from-emerald-600', 'to-teal-600', 'text-white');
+        elements.btnCamera.classList.remove('text-slate-400');
+        elements.btnDevice.classList.remove('bg-gradient-to-r', 'from-emerald-600', 'to-teal-600', 'text-white');
+        elements.btnDevice.classList.add('text-slate-400');
+        elements.deviceArea.classList.add('hidden');
+        elements.cameraArea.classList.remove('hidden');
+        startCamera();
+      });
+
+      elements.fileDrop.addEventListener('click', () => elements.fileInput.click());
+      elements.fileInput.addEventListener('change', (e) => handleFilesSelected(e.target.files));
+
+      elements.btnStartCamera.addEventListener('click', startCamera);
+      elements.btnSwitchCamera.addEventListener('click', toggleFacingMode);
+      elements.btnCapture.addEventListener('click', capturePhoto);
+      elements.btnStopCamera.addEventListener('click', stopCamera);
+
+      elements.btnUpload.addEventListener('click', executeProjectCreation);
+
+      elements.lightbox.addEventListener('click', () => {
+        elements.lightbox.classList.add('hidden');
+      });
+
+      elements.btnCopyClientLink.addEventListener('click', () => copyLink(state.selectedProjectId));
+
+      elements.btnClearLogs.addEventListener('click', () => {
+        state.logs = [];
+        renderLogs();
+      });
+    }
+
+    window.removeImage = removeImage;
+    window.viewClient = viewClient;
+    window.copyLink = copyLink;
+    window.deleteProject = deleteProject;
+    window.showLightbox = showLightbox;
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
