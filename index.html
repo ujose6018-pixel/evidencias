@@ -79,8 +79,34 @@
               </div>
             </div>
             <div class="text-right">
-              <p class="text-[10px] text-slate-500">URL:</p>
-              <p class="text-[10px] font-mono text-slate-400 truncate max-w-[150px]">db.snqfoqslgxelisezeqqc.supabase.co</p>
+              <button id="btn-toggle-credentials" class="glass hover:bg-slate-800/50 border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-xl transition">
+                ⚙️ Configurar Credenciales
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Configuración de Credenciales -->
+        <div id="real-mode-config" class="bg-slate-950/70 backdrop-blur-xl border border-slate-800/70 rounded-3xl p-6 shadow-2xl space-y-4 hidden">
+          <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+            🔑 Configuración de Supabase
+          </h2>
+          <div class="grid grid-cols-1 gap-4 text-xs">
+            <div>
+              <label class="block text-slate-400 font-semibold mb-1">Supabase Project URL</label>
+              <input id="supabase-url" type="text" placeholder="https://tu-proyecto.supabase.co" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono" />
+            </div>
+            <div>
+              <label class="block text-slate-400 font-semibold mb-1">Supabase Public Key (anon)</label>
+              <input id="supabase-key" type="password" placeholder="sb_publishable_..." class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono" />
+            </div>
+            <div class="flex gap-3">
+              <button id="btn-save-credentials" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg">
+                💾 Guardar Credenciales
+              </button>
+              <button id="btn-test-connection" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg">
+                🔍 Verificar Conexión
+              </button>
             </div>
           </div>
         </div>
@@ -311,7 +337,7 @@
       view: 'admin',
       projects: [],
       selectedProjectId: null,
-      supabaseUrl: localStorage.getItem('supabase_url') || 'https://db.snqfoqslgxelisezeqqc.supabase.co',
+      supabaseUrl: localStorage.getItem('supabase_url') || 'https://snqfoqslgxelisezeqqc.supabase.co',
       supabaseKey: localStorage.getItem('supabase_key') || 'sb_publishable_-YUywAvjOPQ23akv61M-5g_ERpDvyS_',
       clientName: '',
       projectTitle: '',
@@ -329,7 +355,7 @@
       stream: null,
       video: null,
       canvas: null,
-      credentialsVisible: true
+      credentialsVisible: false
     };
 
     const elements = {
@@ -381,7 +407,13 @@
       clientNotFound: document.getElementById('client-not-found'),
       year: document.getElementById('year'),
       logsContainer: document.getElementById('logs-container'),
-      btnClearLogs: document.getElementById('btn-clear-logs')
+      btnClearLogs: document.getElementById('btn-clear-logs'),
+      realModeConfig: document.getElementById('real-mode-config'),
+      btnToggleCredentials: document.getElementById('btn-toggle-credentials'),
+      supabaseUrlInput: document.getElementById('supabase-url'),
+      supabaseKeyInput: document.getElementById('supabase-key'),
+      btnSaveCredentials: document.getElementById('btn-save-credentials'),
+      btnTestConnection: document.getElementById('btn-test-connection')
     };
 
     function addLog(service, detail, type = 'INFO') {
@@ -461,13 +493,10 @@
     }
 
     async function autoConnectSupabase() {
-      const SUPABASE_URL = 'https://db.snqfoqslgxelisezeqqc.supabase.co';
-      const SUPABASE_KEY = 'sb_publishable_-YUywAvjOPQ23akv61M-5g_ERpDvyS_';
-      
       addLog('Supabase', 'Conectando automáticamente...', 'INFO');
       
       try {
-        appSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        appSupabase = window.supabase.createClient(state.supabaseUrl, state.supabaseKey);
         
         const { data, error } = await appSupabase.from('projects').select('count', { count: 'exact', head: true });
         
@@ -683,8 +712,55 @@
       state.credentialsVisible = !state.credentialsVisible;
       if (state.credentialsVisible) {
         elements.realModeConfig.classList.remove('hidden');
+        elements.supabaseUrlInput.value = state.supabaseUrl;
+        elements.supabaseKeyInput.value = state.supabaseKey;
       } else {
         elements.realModeConfig.classList.add('hidden');
+      }
+    }
+
+    function saveCredentials() {
+      state.supabaseUrl = elements.supabaseUrlInput.value.trim();
+      state.supabaseKey = elements.supabaseKeyInput.value.trim();
+      localStorage.setItem('supabase_url', state.supabaseUrl);
+      localStorage.setItem('supabase_key', state.supabaseKey);
+      appSupabase = window.supabase.createClient(state.supabaseUrl, state.supabaseKey);
+      showToast('¡Credenciales guardadas exitosamente!', 'success');
+      addLog('Credenciales', 'Credenciales guardadas en localStorage', 'SUCCESS');
+      autoConnectSupabase();
+    }
+
+    async function testConnection() {
+      const url = elements.supabaseUrlInput.value.trim();
+      const key = elements.supabaseKeyInput.value.trim();
+      
+      if (!url || !key) {
+        showToast('Por favor completa ambos campos', 'error');
+        return;
+      }
+
+      addLog('Supabase', 'Probando conexión con nuevas credenciales...', 'INFO');
+      
+      try {
+        const testClient = window.supabase.createClient(url, key);
+        const { data, error } = await testClient.from('projects').select('count', { count: 'exact', head: true });
+        
+        if (error) {
+          throw error;
+        }
+        
+        state.supabaseUrl = url;
+        state.supabaseKey = key;
+        localStorage.setItem('supabase_url', state.supabaseUrl);
+        localStorage.setItem('supabase_key', state.supabaseKey);
+        appSupabase = testClient;
+        updateConnectionStatus('connected');
+        showToast('¡Conexión exitosa!', 'success');
+        addLog('Supabase', 'Conexión verificada exitosamente', 'SUCCESS');
+      } catch (error) {
+        updateConnectionStatus('disconnected', error.message);
+        showToast(`Error de conexión: ${error.message}`, 'error');
+        addLog('Supabase', `Error al probar conexión: ${error.message}`, 'ERROR');
       }
     }
 
@@ -973,6 +1049,10 @@
       elements.clientNameInput.addEventListener('input', (e) => state.clientName = e.target.value);
       elements.projectTitleInput.addEventListener('input', (e) => state.projectTitle = e.target.value);
       elements.reportTextInput.addEventListener('input', (e) => state.reportText = e.target.value);
+
+      elements.btnToggleCredentials.addEventListener('click', toggleCredentials);
+      elements.btnSaveCredentials.addEventListener('click', saveCredentials);
+      elements.btnTestConnection.addEventListener('click', testConnection);
 
       addLog('Sistema', 'Aplicación inicializada correctamente', 'SUCCESS');
       
