@@ -6,6 +6,7 @@
   <title>Workspace con Cámara - Supabase</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     @keyframes pulse {
       0%, 100% { opacity: 1; }
@@ -240,14 +241,6 @@
   <!-- VISTA 2: PORTAL INTERMEDIARIO DEL CLIENTE -->
   <div id="client-view" class="hidden">
     <main class="flex-1 bg-slate-950/50 p-4 lg:p-8">
-      <div class="max-w-4xl mx-auto glass border border-slate-800 rounded-2xl p-3 mb-6 flex items-center gap-3 text-xs">
-        <span class="text-slate-500 pl-2">Enlace compartido único:</span>
-        <div class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-emerald-400 font-mono select-all truncate" id="share-link"></div>
-        <button id="btn-copy-client-link" class="bg-slate-800 hover:bg-slate-750 text-slate-300 py-2 px-4 rounded-xl font-semibold text-xs shrink-0 transition-all">
-          Copiar Link
-        </button>
-      </div>
-
       <div class="max-w-4xl mx-auto bg-slate-950/70 backdrop-blur-xl rounded-3xl border border-slate-800 shadow-2xl overflow-hidden">
         <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 md:p-8 border-b border-slate-800">
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -284,6 +277,14 @@
         </div>
 
         <div id="client-content" class="p-6 md:p-8 space-y-6 hidden">
+          <div class="flex flex-wrap gap-3">
+            <button id="btn-export-pdf" class="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-all shadow-lg">
+              📄 Exportar a PDF
+            </button>
+            <button id="btn-export-txt" class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-all shadow-lg">
+              📝 Exportar a TXT
+            </button>
+          </div>
           <div class="space-y-3">
             <h3 class="text-xs uppercase font-mono tracking-wider text-slate-400 font-bold border-b border-slate-800 pb-3 flex items-center gap-2">
               <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -393,8 +394,6 @@
       projectsContainer: document.getElementById('projects-container'),
       adminView: document.getElementById('admin-view'),
       clientView: document.getElementById('client-view'),
-      shareLink: document.getElementById('share-link'),
-      btnCopyClientLink: document.getElementById('btn-copy-client-link'),
       clientProjectTitle: document.getElementById('client-project-title'),
       clientProjectId: document.getElementById('client-project-id'),
       clientMeta: document.getElementById('client-meta'),
@@ -413,7 +412,9 @@
       supabaseUrlInput: document.getElementById('supabase-url'),
       supabaseKeyInput: document.getElementById('supabase-key'),
       btnSaveCredentials: document.getElementById('btn-save-credentials'),
-      btnTestConnection: document.getElementById('btn-test-connection')
+      btnTestConnection: document.getElementById('btn-test-connection'),
+      btnExportPdf: document.getElementById('btn-export-pdf'),
+      btnExportTxt: document.getElementById('btn-export-txt')
     };
 
     function addLog(service, detail, type = 'INFO') {
@@ -782,7 +783,6 @@
       elements.adminView.classList.add('hidden');
       elements.clientView.classList.remove('hidden');
       elements.btnBackAdmin.classList.remove('hidden');
-      elements.shareLink.textContent = `${window.location.origin}${window.location.pathname}?proyectoId=${state.selectedProjectId}`;
     }
 
     async function loadClientProject(id) {
@@ -818,8 +818,16 @@
       
       if (project.photos && project.photos.length > 0) {
         elements.clientPhotos.innerHTML = project.photos.map((url, idx) => `
-          <div class="aspect-square rounded-2xl overflow-hidden border border-slate-700 group cursor-pointer" onclick="openLightbox('${url}')">
+          <div class="aspect-square rounded-2xl overflow-hidden border border-slate-700 group relative">
             <img src="${url}" class="w-full h-full object-cover transition-all duration-300 group-hover:scale-105" alt="Evidencia ${idx + 1}" />
+            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center gap-2">
+              <button onclick="openLightbox('${url}')" class="bg-white/20 hover:bg-white/30 text-white text-xs font-semibold py-2 px-4 rounded-xl backdrop-blur-sm transition-all">
+                👁️ Ver
+              </button>
+              <button onclick="downloadImage('${url}', ${idx})" class="bg-emerald-600/80 hover:bg-emerald-700 text-white text-xs font-semibold py-2 px-4 rounded-xl transition-all">
+                ⬇️ Descargar
+              </button>
+            </div>
           </div>
         `).join('');
       } else {
@@ -832,6 +840,105 @@
     function openLightbox(url) {
       elements.lightboxImg.src = url;
       elements.lightbox.classList.remove('hidden');
+    }
+
+    function downloadImage(url, index) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Evidencia_${index + 1}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('Imagen descargada!');
+    }
+
+    function exportToTxt() {
+      const project = state.projects.find(p => p.id === state.selectedProjectId);
+      if (!project) return;
+
+      let content = `Informe Técnico - ${project.projectTitle}\n`;
+      content += `Cliente: ${project.clientName}\n`;
+      content += `Fecha: ${project.date}\n`;
+      content += `ID: ${project.id}\n`;
+      content += `\n${'='.repeat(50)}\n\n`;
+      content += project.reportText;
+      content += `\n\n${'='.repeat(50)}\n`;
+      content += `Evidencias fotográficas (${project.photos?.length || 0}):\n`;
+      if (project.photos && project.photos.length > 0) {
+        project.photos.forEach((url, idx) => {
+          content += `${idx + 1}. ${url}\n`;
+        });
+      }
+
+      const blob = new Blob([content], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Informe_${project.projectTitle.replace(/\s+/g, '_')}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      showToast('Informe exportado a TXT!');
+    }
+
+    async function exportToPdf() {
+      const { jsPDF } = window.jspdf;
+      const project = state.projects.find(p => p.id === state.selectedProjectId);
+      if (!project) return;
+
+      const doc = new jsPDF();
+      let yPos = 20;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text('Informe Técnico', 105, yPos, { align: 'center' });
+      yPos += 10;
+
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Proyecto: ${project.projectTitle}`, 20, yPos);
+      yPos += 7;
+      doc.text(`Cliente: ${project.clientName}`, 20, yPos);
+      yPos += 7;
+      doc.text(`Fecha: ${project.date}`, 20, yPos);
+      yPos += 15;
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('Resumen:', 20, yPos);
+      yPos += 10;
+      doc.setFont('helvetica', 'normal');
+      const splitText = doc.splitTextToSize(project.reportText, 170);
+      doc.text(splitText, 20, yPos);
+      yPos += splitText.length * 7 + 10;
+
+      if (project.photos && project.photos.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Evidencias:', 20, yPos);
+        yPos += 10;
+
+        for (let i = 0; i < project.photos.length; i++) {
+          try {
+            if (yPos > 250) {
+              doc.addPage();
+              yPos = 20;
+            }
+
+            const imgData = project.photos[i];
+            if (imgData.startsWith('data:image')) {
+              doc.addImage(imgData, 'JPEG', 20, yPos, 50, 50);
+            } else {
+              doc.text(`Evidencia ${i + 1}: ${imgData}`, 20, yPos);
+            }
+            yPos += 55;
+          } catch (e) {
+            doc.text(`Evidencia ${i + 1}: No se pudo cargar la imagen`, 20, yPos);
+            yPos += 10;
+          }
+        }
+      }
+
+      doc.save(`Informe_${project.projectTitle.replace(/\s+/g, '_')}.pdf`);
+      showToast('Informe exportado a PDF!');
     }
 
     async function executeProjectCreation() {
@@ -1036,7 +1143,6 @@
 
       elements.btnUpload.addEventListener('click', executeProjectCreation);
       elements.btnBackAdmin.addEventListener('click', showAdminView);
-      elements.btnCopyClientLink.addEventListener('click', () => copyLink(state.selectedProjectId));
       elements.btnClearLogs.addEventListener('click', () => {
         state.logs = [];
         renderLogs();
@@ -1053,6 +1159,8 @@
       elements.btnToggleCredentials.addEventListener('click', toggleCredentials);
       elements.btnSaveCredentials.addEventListener('click', saveCredentials);
       elements.btnTestConnection.addEventListener('click', testConnection);
+      elements.btnExportPdf.addEventListener('click', exportToPdf);
+      elements.btnExportTxt.addEventListener('click', exportToTxt);
 
       addLog('Sistema', 'Aplicación inicializada correctamente', 'SUCCESS');
       
