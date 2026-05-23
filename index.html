@@ -9,6 +9,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.2.0/build/index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   <style>
     @keyframes pulse {
       0%, 100% { opacity: 1; }
@@ -283,8 +285,11 @@
             <button id="btn-export-pdf" class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-all shadow-lg">
               📄 Exportar a PDF
             </button>
+            <button id="btn-export-word" class="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-all shadow-lg">
+              📝 Exportar a Word
+            </button>
             <button id="btn-export-txt" class="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-all shadow-lg">
-              📝 Exportar a TXT
+              📋 Exportar a TXT
             </button>
           </div>
           <div class="space-y-3">
@@ -416,6 +421,7 @@
       btnSaveCredentials: document.getElementById('btn-save-credentials'),
       btnTestConnection: document.getElementById('btn-test-connection'),
       btnExportPdf: document.getElementById('btn-export-pdf'),
+      btnExportWord: document.getElementById('btn-export-word'),
       btnExportTxt: document.getElementById('btn-export-txt')
     };
 
@@ -888,59 +894,198 @@
       const project = state.projects.find(p => p.id === state.selectedProjectId);
       if (!project) return;
 
-      const doc = new jsPDF();
-      let yPos = 20;
+      const doc = new jsPDF({
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+      const marginLeft = 20;
+      const marginRight = 20;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const contentWidth = pageWidth - marginLeft - marginRight;
+      let yPos = 25;
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(18);
-      doc.text('Informe Técnico', 105, yPos, { align: 'center' });
-      yPos += 10;
-
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Proyecto: ${project.projectTitle}`, 20, yPos);
-      yPos += 7;
-      doc.text(`Cliente: ${project.clientName}`, 20, yPos);
-      yPos += 7;
-      doc.text(`Fecha: ${project.date}`, 20, yPos);
+      doc.setFontSize(20);
+      doc.text('Informe Técnico', pageWidth / 2, yPos, { align: 'center' });
       yPos += 15;
 
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Proyecto: ${project.projectTitle}`, marginLeft, yPos);
+      yPos += 8;
+      doc.text(`Cliente: ${project.clientName}`, marginLeft, yPos);
+      yPos += 8;
+      doc.text(`Fecha: ${project.date}`, marginLeft, yPos);
+      yPos += 20;
+
       doc.setFont('helvetica', 'bold');
-      doc.text('Resumen:', 20, yPos);
+      doc.setFontSize(14);
+      doc.text('Resumen del Informe', marginLeft, yPos);
       yPos += 10;
       doc.setFont('helvetica', 'normal');
-      const splitText = doc.splitTextToSize(project.reportText, 170);
-      doc.text(splitText, 20, yPos);
-      yPos += splitText.length * 7 + 10;
+      doc.setFontSize(11);
+      const splitText = doc.splitTextToSize(project.reportText, contentWidth);
+      doc.text(splitText, marginLeft, yPos);
+      yPos += splitText.length * 7 + 15;
 
       if (project.photos && project.photos.length > 0) {
         doc.setFont('helvetica', 'bold');
-        doc.text('Evidencias:', 20, yPos);
-        yPos += 10;
+        doc.setFontSize(14);
+        doc.text('Evidencias Fotográficas', marginLeft, yPos);
+        yPos += 12;
+
+        const imgWidth = 70;
+        const imgHeight = 70;
+        let xPos = marginLeft;
 
         for (let i = 0; i < project.photos.length; i++) {
           try {
-            if (yPos > 250) {
+            if (yPos + imgHeight > doc.internal.pageSize.getHeight() - 25) {
               doc.addPage();
-              yPos = 20;
+              yPos = 25;
+              xPos = marginLeft;
             }
 
             const imgData = project.photos[i];
             if (imgData.startsWith('data:image')) {
-              doc.addImage(imgData, 'JPEG', 20, yPos, 50, 50);
-            } else {
-              doc.text(`Evidencia ${i + 1}: ${imgData}`, 20, yPos);
+              doc.addImage(imgData, 'JPEG', xPos, yPos, imgWidth, imgHeight);
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(10);
+              doc.text(`Evidencia ${i + 1}`, xPos, yPos + imgHeight + 5);
             }
-            yPos += 55;
+
+            xPos += imgWidth + 10;
+            if (xPos + imgWidth > pageWidth - marginRight) {
+              xPos = marginLeft;
+              yPos += imgHeight + 15;
+            }
           } catch (e) {
-            doc.text(`Evidencia ${i + 1}: No se pudo cargar la imagen`, 20, yPos);
-            yPos += 10;
+            console.error('Error adding image to PDF:', e);
           }
         }
       }
 
       doc.save(`Informe_${project.projectTitle.replace(/\s+/g, '_')}.pdf`);
       showToast('Informe exportado a PDF!');
+    }
+
+    async function exportToWord() {
+      const { Document, Packer, Paragraph, TextRun, ImageRun, HeadingLevel, AlignmentType, WidthType, BorderStyle } = window.docx;
+      const project = state.projects.find(p => p.id === state.selectedProjectId);
+      if (!project) return;
+
+      const children = [
+        new Paragraph({
+          text: 'Informe Técnico',
+          heading: HeadingLevel.TITLE,
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 400 }
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: 'Proyecto: ',
+              bold: true,
+              size: 24
+            }),
+            new TextRun({
+              text: project.projectTitle,
+              size: 24
+            })
+          ],
+          spacing: { after: 200 }
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: 'Cliente: ',
+              bold: true,
+              size: 24
+            }),
+            new TextRun({
+              text: project.clientName,
+              size: 24
+            })
+          ],
+          spacing: { after: 200 }
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: 'Fecha: ',
+              bold: true,
+              size: 24
+            }),
+            new TextRun({
+              text: project.date,
+              size: 24
+            })
+          ],
+          spacing: { after: 400 }
+        }),
+        new Paragraph({
+          text: 'Resumen del Informe',
+          heading: HeadingLevel.HEADING_1,
+          spacing: { after: 200 }
+        }),
+        new Paragraph({
+          text: project.reportText,
+          spacing: { after: 400, line: 360 }
+        })
+      ];
+
+      if (project.photos && project.photos.length > 0) {
+        children.push(new Paragraph({
+          text: 'Evidencias Fotográficas',
+          heading: HeadingLevel.HEADING_1,
+          spacing: { after: 200 }
+        }));
+
+        for (let i = 0; i < project.photos.length; i++) {
+          try {
+            const imgData = project.photos[i];
+            if (imgData.startsWith('data:image')) {
+              const base64Data = imgData.split(',')[1];
+              children.push(
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [
+                    new ImageRun({
+                      data: Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)),
+                      transformation: { width: 400, height: 400 }
+                    })
+                  ],
+                  spacing: { after: 200 }
+                }),
+                new Paragraph({
+                  text: `Evidencia ${i + 1}`,
+                  alignment: AlignmentType.CENTER,
+                  spacing: { after: 400 }
+                })
+              );
+            } else {
+              children.push(new Paragraph({
+                text: `Evidencia ${i + 1}: ${imgData}`,
+                spacing: { after: 200 }
+              }));
+            }
+          } catch (e) {
+            console.error('Error adding image to Word:', e);
+          }
+        }
+      }
+
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: children
+        }]
+      });
+
+      const blob = await Packer.toBlob(doc);
+      window.saveAs(blob, `Informe_${project.projectTitle.replace(/\s+/g, '_')}.docx`);
+      showToast('Informe exportado a Word!');
     }
 
     async function executeProjectCreation() {
@@ -1162,6 +1307,7 @@
       elements.btnSaveCredentials.addEventListener('click', saveCredentials);
       elements.btnTestConnection.addEventListener('click', testConnection);
       elements.btnExportPdf.addEventListener('click', exportToPdf);
+      elements.btnExportWord.addEventListener('click', exportToWord);
       elements.btnExportTxt.addEventListener('click', exportToTxt);
 
       if ('serviceWorker' in navigator) {
