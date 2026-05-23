@@ -17,7 +17,6 @@
     }
     .animate-pulse-custom { animation: pulse 1s infinite; }
     .animate-spin-custom { animation: spin 1s linear infinite; }
-    .animate-flash { animation: pulse 0.2s ease-out; }
     .glass {
       background: rgba(15, 23, 42, 0.8);
       backdrop-filter: blur(12px);
@@ -25,6 +24,7 @@
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 font-sans">
+  
   <!-- Toast Notificaciones -->
   <div id="toast" class="fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-2xl flex items-center gap-3 border hidden transition-all duration-300"></div>
 
@@ -42,7 +42,7 @@
       <div class="flex items-center gap-3">
         <div class="bg-gradient-to-br from-blue-600/20 to-purple-600/20 p-2.5 rounded-2xl border border-blue-500/30">
           <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
           </svg>
         </div>
         <div>
@@ -54,10 +54,6 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <button id="btn-toggle-credentials" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/30">
-          ⚙️ Cambiar Credenciales
-        </button>
-
         <button id="btn-back-admin" class="glass hover:bg-slate-800/50 border border-slate-700 text-slate-200 text-xs px-3.5 py-1.5 rounded-xl transition hidden">
           ← Volver al Panel
         </button>
@@ -72,40 +68,20 @@
       <!-- Formulario y Captura de Evidencias -->
       <div class="lg:col-span-7 flex flex-col gap-6">
         
-        <!-- Credenciales de Supabase -->
-        <div id="real-mode-config" class="bg-gradient-to-br from-emerald-950/40 to-teal-950/40 border border-emerald-700/40 p-5 rounded-2xl space-y-4">
-          <h3 class="text-sm font-bold text-emerald-200 flex items-center gap-2">
-            🔑 Configuración de Almacenamiento (Supabase)
-          </h3>
-          <div class="grid grid-cols-1 gap-3 text-[11px]">
-            <div>
-              <label class="block text-slate-400 mb-1">Supabase URL</label>
-              <input id="supabase-url" type="text" placeholder="https://<project-ref>.supabase.co" value="https://db.snqfoqslgxelisezeqqc.supabase.co" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-emerald-500 font-mono transition-all" />
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1">Supabase Public Key (Anon Key)</label>
-              <input id="supabase-key" type="password" placeholder="sb_publishable_..." value="sb_publishable_-YUywAvjOPQ23akv61M-5g_ERpDvyS_" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-emerald-500 font-mono transition-all" />
-            </div>
-          </div>
-          
-          <!-- Estado de Conexión -->
-          <div class="bg-slate-900/70 border border-slate-700 rounded-xl p-3">
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex items-center gap-2">
-                <div id="connection-indicator" class="w-3 h-3 rounded-full bg-slate-500"></div>
-                <span id="connection-status-text" class="text-xs text-slate-400">Desconectado</span>
+        <!-- Estado de Conexión -->
+        <div id="connection-status" class="bg-gradient-to-br from-slate-900/70 to-slate-800/70 border border-slate-700/70 p-4 rounded-2xl">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div id="connection-indicator" class="w-3 h-3 rounded-full bg-slate-500"></div>
+              <div>
+                <span id="connection-status-text" class="text-sm font-semibold text-slate-300">Conectando...</span>
+                <p id="connection-error" class="text-[10px] text-slate-500 mt-1">Verificando conexión con Supabase</p>
               </div>
-              <button id="btn-verify-connection" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-[10px] font-bold py-1.5 px-3 rounded-lg transition-all">
-                🔍 Verificar Conexión
-              </button>
             </div>
-          </div>
-
-          <div class="flex items-center justify-between gap-4 pt-1">
-            <button id="btn-auth" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-2 px-4 rounded-xl text-[11px] transition-all shadow-lg hover:shadow-emerald-500/25">
-              🔐 Conectar a Supabase
-            </button>
-            <span id="user-email" class="text-xs text-green-400 hidden">Conectado: <strong>Supabase</strong></span>
+            <div class="text-right">
+              <p class="text-[10px] text-slate-500">URL:</p>
+              <p class="text-[10px] font-mono text-slate-400 truncate max-w-[150px]">db.snqfoqslgxelisezeqqc.supabase.co</p>
+            </div>
           </div>
         </div>
 
@@ -205,7 +181,7 @@
 
           <!-- Botón de Sincronización final -->
           <button id="btn-upload" class="w-full py-3.5 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white hover:shadow-emerald-500/30">
-            💾 Guardar en Supabase y Generar Enlace Único
+            💾 Guardar y Generar Enlace Único
           </button>
         </div>
       </div>
@@ -217,7 +193,7 @@
             <h2 class="text-sm font-bold text-slate-200">
               📁 Historial de Informes Registrados
             </h2>
-            <p class="text-[11px] text-slate-400 mt-1">Listado de proyectos almacenados en Supabase</p>
+            <p class="text-[11px] text-slate-400 mt-1">Listado de proyectos almacenados</p>
           </div>
 
           <div id="no-projects" class="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-500">
@@ -254,12 +230,12 @@
                 <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span class="text-[10px] uppercase font-mono tracking-wider text-green-400 font-bold">Informe Técnico Registrado en Drive</span>
+                <span class="text-[10px] uppercase font-mono tracking-wider text-green-400 font-bold">Informe Técnico</span>
               </div>
               <h2 id="client-project-title" class="text-xl md:text-2xl font-bold text-slate-50 mt-3"></h2>
             </div>
             <div class="text-left sm:text-right">
-              <p class="text-[10px] text-slate-400 font-mono">ID de Carpeta:</p>
+              <p class="text-[10px] text-slate-400 font-mono">ID de Proyecto:</p>
               <p id="client-project-id" class="text-[10px] text-slate-500 font-mono truncate max-w-[180px]"></p>
             </div>
           </div>
@@ -278,7 +254,7 @@
 
         <div id="client-loading" class="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
           <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin-custom"></div>
-          <p class="text-sm font-semibold text-slate-400">Consultando API de Google Drive...</p>
+          <p class="text-sm font-semibold text-slate-400">Cargando datos...</p>
         </div>
 
         <div id="client-content" class="p-6 md:p-8 space-y-6 hidden">
@@ -301,12 +277,11 @@
         </div>
 
         <div id="client-not-found" class="p-12 text-center text-slate-500 hidden">
-          <p class="text-sm font-semibold">No se encontraron datos públicos del proyecto en la ruta especificada.</p>
+          <p class="text-sm font-semibold">No se encontraron datos del proyecto.</p>
         </div>
 
         <div class="bg-slate-950 p-6 text-center border-t border-slate-800 text-[11px] text-slate-500">
           <p>© <span id="year"></span> Portal Técnico Integrado.</p>
-          <p class="mt-1 text-[10px] text-slate-600">Almacenamiento directo sobre la API de Google Drive.</p>
         </div>
       </div>
     </main>
@@ -317,20 +292,20 @@
     <div class="max-w-7xl mx-auto">
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase font-mono">
-          📟 Consola del Sistema e Interacciones HTTP (Drive API v3)
+          📟 Consola del Sistema
         </h3>
         <button id="btn-clear-logs" class="text-slate-600 hover:text-slate-400 text-[10px] font-semibold transition-colors">
           Limpiar Logs
         </button>
       </div>
       <div id="logs-container" class="bg-slate-900 border border-slate-800 rounded-2xl p-4 font-mono text-[10px] text-slate-400 h-28 overflow-y-auto space-y-2">
-        <p class="text-slate-600 italic">Consola inactiva. Rellena el formulario o captura fotos para iniciar las transmisiones de red.</p>
+        <p class="text-slate-600 italic">Consola inactiva.</p>
       </div>
     </div>
   </footer>
 
   <script>
-    let supabase = null;
+    let appSupabase = null;
     
     const state = {
       view: 'admin',
@@ -361,16 +336,10 @@
       toast: document.getElementById('toast'),
       lightbox: document.getElementById('lightbox'),
       lightboxImg: document.getElementById('lightbox-img'),
-      btnToggleCredentials: document.getElementById('btn-toggle-credentials'),
       btnBackAdmin: document.getElementById('btn-back-admin'),
-      realModeConfig: document.getElementById('real-mode-config'),
-      supabaseUrlInput: document.getElementById('supabase-url'),
-      supabaseKeyInput: document.getElementById('supabase-key'),
-      btnAuth: document.getElementById('btn-auth'),
-      userEmail: document.getElementById('user-email'),
       connectionIndicator: document.getElementById('connection-indicator'),
       connectionStatusText: document.getElementById('connection-status-text'),
-      btnVerifyConnection: document.getElementById('btn-verify-connection'),
+      connectionError: document.getElementById('connection-error'),
       clientNameInput: document.getElementById('client-name'),
       projectTitleInput: document.getElementById('project-title'),
       reportTextInput: document.getElementById('report-text'),
@@ -423,7 +392,7 @@
 
     function renderLogs() {
       if (state.logs.length === 0) {
-        elements.logsContainer.innerHTML = '<p class="text-slate-600 italic">Consola inactiva. Rellena el formulario o captura fotos para iniciar las transmisiones de red.</p>';
+        elements.logsContainer.innerHTML = '<p class="text-slate-600 italic">Consola inactiva.</p>';
         return;
       }
       elements.logsContainer.innerHTML = state.logs.map(log => {
@@ -453,84 +422,70 @@
       setTimeout(() => elements.toast.classList.add('hidden'), 4000);
     }
 
-    function updateConnectionStatus(status) {
+    function updateConnectionStatus(status, errorMsg = '') {
       const indicator = elements.connectionIndicator;
       const statusText = elements.connectionStatusText;
+      const errorText = elements.connectionError;
       
       switch(status) {
         case 'connected':
           indicator.className = 'w-3 h-3 rounded-full bg-green-500 animate-pulse-custom shadow-lg shadow-green-500/40';
-          statusText.textContent = 'Conexión estable';
-          statusText.className = 'text-xs text-green-400 font-semibold';
+          statusText.textContent = '✅ Conexión estable';
+          statusText.className = 'text-sm font-semibold text-green-400';
+          errorText.textContent = 'Todo funcionando correctamente';
+          errorText.className = 'text-[10px] text-green-500 mt-1';
           break;
-        case 'unstable':
+        case 'missing-table':
           indicator.className = 'w-3 h-3 rounded-full bg-orange-500 animate-pulse-custom shadow-lg shadow-orange-500/40';
-          statusText.textContent = 'Conexión inestable';
-          statusText.className = 'text-xs text-orange-400 font-semibold';
+          statusText.textContent = '⚠️ Falta crear tabla';
+          statusText.className = 'text-sm font-semibold text-orange-400';
+          errorText.textContent = errorMsg || 'Crea la tabla "projects" en Supabase';
+          errorText.className = 'text-[10px] text-orange-500 mt-1';
+          break;
+        case 'missing-bucket':
+          indicator.className = 'w-3 h-3 rounded-full bg-orange-500 animate-pulse-custom shadow-lg shadow-orange-500/40';
+          statusText.textContent = '⚠️ Falta crear bucket';
+          statusText.className = 'text-sm font-semibold text-orange-400';
+          errorText.textContent = errorMsg || 'Crea el bucket "project-photos" en Storage';
+          errorText.className = 'text-[10px] text-orange-500 mt-1';
           break;
         case 'disconnected':
         default:
           indicator.className = 'w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/40';
-          statusText.textContent = 'Sin conexión';
-          statusText.className = 'text-xs text-red-400 font-semibold';
+          statusText.textContent = '❌ Sin conexión';
+          statusText.className = 'text-sm font-semibold text-red-400';
+          errorText.textContent = errorMsg || 'Error de conexión con Supabase';
+          errorText.className = 'text-[10px] text-red-500 mt-1';
           break;
       }
     }
 
-    async function verifySupabaseConnection() {
-      addLog('Verificación Conexión', 'Iniciando verificación de conexión con Supabase...', 'INFO');
+    async function autoConnectSupabase() {
+      const SUPABASE_URL = 'https://db.snqfoqslgxelisezeqqc.supabase.co';
+      const SUPABASE_KEY = 'sb_publishable_-YUywAvjOPQ23akv61M-5g_ERpDvyS_';
       
-      const url = elements.supabaseUrlInput.value;
-      const key = elements.supabaseKeyInput.value;
+      addLog('Supabase', 'Conectando automáticamente...', 'INFO');
       
-      if (!url || !key) {
-        updateConnectionStatus('disconnected');
-        addLog('Verificación Conexión', 'Faltan credenciales de Supabase. La app usará almacenamiento local.', 'INFO');
-        showToast('Usando almacenamiento local (configura Supabase para nube)', 'success');
-        return;
-      }
-
       try {
-        supabase = window.supabase.createClient(url, key);
+        appSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        const { data, error } = await supabase.from('projects').select('count', { count: 'exact', head: true });
+        const { data, error } = await appSupabase.from('projects').select('count', { count: 'exact', head: true });
         
         if (error) {
-          updateConnectionStatus('unstable');
-          addLog('Verificación Conexión', `Conectado pero verifica tu tabla "projects": ${error.message}`, 'INFO');
-          showToast('Conectado, pero configura tu tabla "projects"', 'error');
+          if (error.message.includes('relation') && error.message.includes('does not exist')) {
+            updateConnectionStatus('missing-table', 'Falta la tabla "projects" - ve a SQL Editor en Supabase');
+            addLog('Supabase', 'ERROR: Falta crear la tabla "projects"', 'ERROR');
+          } else {
+            updateConnectionStatus('missing-table', error.message);
+            addLog('Supabase', `Error: ${error.message}`, 'ERROR');
+          }
         } else {
           updateConnectionStatus('connected');
-          addLog('Verificación Conexión', '¡Conexión con Supabase establecida correctamente!', 'SUCCESS');
-          showToast('¡Conexión estable con Supabase!', 'success');
-          elements.userEmail.classList.remove('hidden');
+          addLog('Supabase', '¡Conectado exitosamente!', 'SUCCESS');
         }
       } catch (error) {
-        updateConnectionStatus('disconnected');
-        addLog('Verificación Conexión', `No se pudo conectar a Supabase. Usando almacenamiento local: ${error.message}`, 'INFO');
-        showToast('Usando almacenamiento local (configura Supabase después)', 'success');
-      }
-    }
-
-    async function connectToSupabase() {
-      const url = elements.supabaseUrlInput.value;
-      const key = elements.supabaseKeyInput.value;
-      
-      if (!url || !key) {
-        showToast('Por favor ingresa URL y Public Key', 'error');
-        return;
-      }
-
-      try {
-        localStorage.setItem('supabase_url', url);
-        localStorage.setItem('supabase_key', key);
-        
-        state.supabaseUrl = url;
-        state.supabaseKey = key;
-        
-        await verifySupabaseConnection();
-      } catch (error) {
-        addLog('Supabase Auth', `Error: ${error.message}`, 'ERROR');
+        updateConnectionStatus('disconnected', error.message);
+        addLog('Supabase', `Error de conexión: ${error.message}`, 'ERROR');
       }
     }
 
@@ -567,7 +522,7 @@
           <div class="flex justify-between items-start gap-3">
             <div>
               <span class="text-[9px] text-emerald-400 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-3 py-0.5 rounded-full font-semibold font-mono">
-                Supabase
+                Almacenado
               </span>
               <h4 class="text-sm font-bold text-slate-100 mt-2">${p.projectTitle}</h4>
               <p class="text-xs text-slate-400 mt-1">👤 ${p.clientName}</p>
@@ -761,40 +716,44 @@
       elements.clientMeta.classList.add('hidden');
       elements.clientProjectTitle.textContent = 'Cargando datos...';
       elements.clientProjectId.textContent = id;
-      addLog('Cliente View', `Solicitando lectura de carpeta: ${id}`, 'INFO');
+      addLog('Cliente View', `Solicitando lectura de proyecto: ${id}`, 'INFO');
 
       const found = state.projects.find(p => p.id === id);
       if (found) {
         setTimeout(() => {
           renderClientProject(found);
-          addLog('Cliente View', 'Detalle del proyecto cargado correctamente', 'SUCCESS');
-        }, 700);
+        }, 400);
       } else {
         elements.clientLoading.classList.add('hidden');
         elements.clientNotFound.classList.remove('hidden');
-        addLog('Cliente View', 'No se encontró el proyecto.', 'ERROR');
+        addLog('Cliente View', 'Proyecto no encontrado', 'ERROR');
       }
     }
 
-    function renderClientProject(data) {
+    function renderClientProject(project) {
       elements.clientLoading.classList.add('hidden');
       elements.clientContent.classList.remove('hidden');
       elements.clientMeta.classList.remove('hidden');
-      elements.clientProjectTitle.textContent = data.projectTitle;
-      elements.clientNameText.textContent = data.clientName;
-      elements.clientDate.textContent = data.date;
-      elements.clientReport.textContent = data.reportText;
-      elements.clientPhotos.innerHTML = data.photos.map((url, idx) => `
-        <div onclick="showLightbox('${url}')" class="group relative aspect-video bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 hover:border-blue-500 cursor-zoom-in transition-all hover:shadow-lg">
-          <img src="${url}" alt="Evidencia ${idx + 1}" class="w-full h-full object-cover group-hover:scale-105 transition-all duration-300" />
-          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all flex items-end p-4">
-            <span class="text-xs text-slate-200 font-semibold">Evidencia fotográfica #${idx + 1}</span>
+      
+      elements.clientProjectTitle.textContent = project.projectTitle;
+      elements.clientNameText.textContent = project.clientName;
+      elements.clientDate.textContent = project.date;
+      elements.clientReport.textContent = project.reportText;
+      
+      if (project.photos && project.photos.length > 0) {
+        elements.clientPhotos.innerHTML = project.photos.map((url, idx) => `
+          <div class="aspect-square rounded-2xl overflow-hidden border border-slate-700 group cursor-pointer" onclick="openLightbox('${url}')">
+            <img src="${url}" class="w-full h-full object-cover transition-all duration-300 group-hover:scale-105" alt="Evidencia ${idx + 1}" />
           </div>
-        </div>
-      `).join('');
+        `).join('');
+      } else {
+        elements.clientPhotos.innerHTML = '<p class="text-sm text-slate-500 col-span-full text-center py-8">No hay fotos adjuntas en este informe</p>';
+      }
+      
+      addLog('Cliente View', 'Proyecto cargado exitosamente', 'SUCCESS');
     }
 
-    function showLightbox(url) {
+    function openLightbox(url) {
       elements.lightboxImg.src = url;
       elements.lightbox.classList.remove('hidden');
     }
@@ -820,7 +779,7 @@
       let savedToSupabase = false;
 
       try {
-        if (supabase && state.supabaseKey) {
+        if (appSupabase && state.supabaseKey) {
           try {
             addLog('Supabase', 'Intentando guardar en Supabase...', 'INFO');
             
@@ -832,12 +791,12 @@
                 const blob = await response.blob();
                 const fileName = `${Date.now()}-${img.name}`;
                 
-                const { error: uploadError } = await supabase.storage
+                const { error: uploadError } = await appSupabase.storage
                   .from('project-photos')
                   .upload(fileName, blob);
                   
                 if (!uploadError) {
-                  const { data: urlData } = supabase.storage
+                  const { data: urlData } = appSupabase.storage
                     .from('project-photos')
                     .getPublicUrl(fileName);
                   uploadedUrls.push(urlData.publicUrl);
@@ -853,7 +812,7 @@
               photoUrls = uploadedUrls;
             }
 
-            const { data, error } = await supabase
+            const { data, error } = await appSupabase
               .from('projects')
               .insert({
                 client_name: state.clientName,
@@ -904,8 +863,8 @@
         
         const message = savedToSupabase 
           ? '¡Trabajo guardado en Supabase y localmente!' 
-          : '¡Trabajo guardado localmente (configura Supabase para nube)!';
-        showToast(message, savedToSupabase ? 'success' : 'success');
+          : '¡Trabajo guardado localmente!';
+        showToast(message, 'success');
         addLog('Sistema', `Proyecto guardado con ID: ${projectId}`, 'SUCCESS');
         
       } catch (error) {
@@ -944,125 +903,83 @@
 
     function init() {
       elements.year.textContent = new Date().getFullYear();
-
-      const saved = localStorage.getItem('drive_cam_projects');
-      if (saved) {
-        state.projects = JSON.parse(saved);
-      } else {
-        const defaultProjects = [{
-          id: 'SUPABASE-DEMO-001',
-          clientName: 'Consorcio Vial Metropolitano',
-          projectTitle: 'Reparación de Columnas de Soporte',
-          reportText: 'Se realizó el picado del hormigón deteriorado en la base de la columna de soporte #12. Se limpió el óxido de las armaduras de acero expuestas mediante cepillado mecánico y se aplicó un puente de adherencia epóxico. Finalmente, se rellenó la cavidad utilizando mortero cementicio de alta resistencia sin contracción estructural.',
-          date: new Date(Date.now() - 86400000 * 2).toLocaleDateString(),
-          photos: [
-            'https://images.unsplash.com/photo-1590069261209-f8e9b8642343?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=800&q=80'
-          ]
-        }];
-        state.projects = defaultProjects;
-        localStorage.setItem('drive_cam_projects', JSON.stringify(defaultProjects));
+      
+      const savedProjects = localStorage.getItem('drive_cam_projects');
+      if (savedProjects) {
+        state.projects = JSON.parse(savedProjects);
       }
       renderProjects();
 
-      const params = new URLSearchParams(window.location.search);
-      const projectId = params.get('proyectoId');
-
-      if (projectId) {
-        state.view = 'client';
-        state.selectedProjectId = projectId;
-        showClientView();
-        loadClientProject(projectId);
+      const urlParams = new URLSearchParams(window.location.search);
+      const proyectoId = urlParams.get('proyectoId');
+      if (proyectoId) {
+        viewClient(proyectoId);
       }
 
-      elements.supabaseUrlInput.value = state.supabaseUrl;
-      elements.supabaseKeyInput.value = state.supabaseKey;
-
-      elements.btnToggleCredentials.addEventListener('click', () => {
-        toggleCredentials();
-      });
-
-      elements.btnVerifyConnection.addEventListener('click', verifySupabaseConnection);
-      elements.btnAuth.addEventListener('click', connectToSupabase);
-
-      elements.supabaseUrlInput.addEventListener('input', (e) => {
-        state.supabaseUrl = e.target.value;
-        localStorage.setItem('supabase_url', state.supabaseUrl);
-      });
-
-      elements.supabaseKeyInput.addEventListener('input', (e) => {
-        state.supabaseKey = e.target.value;
-        localStorage.setItem('supabase_key', state.supabaseKey);
-      });
-
-      elements.btnBackAdmin.addEventListener('click', () => {
-        showAdminView();
-        state.selectedProjectId = null;
-      });
-
-      elements.clientNameInput.addEventListener('input', (e) => {
-        state.clientName = e.target.value;
-      });
-
-      elements.projectTitleInput.addEventListener('input', (e) => {
-        state.projectTitle = e.target.value;
-      });
-
-      elements.reportTextInput.addEventListener('input', (e) => {
-        state.reportText = e.target.value;
-      });
-
       elements.btnDevice.addEventListener('click', () => {
-        state.imageSource = 'device';
-        stopCamera();
-        elements.btnDevice.classList.add('bg-gradient-to-r', 'from-emerald-600', 'to-teal-600', 'text-white');
+        elements.btnDevice.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-blue-700', 'text-white');
         elements.btnDevice.classList.remove('text-slate-400');
-        elements.btnCamera.classList.remove('bg-gradient-to-r', 'from-emerald-600', 'to-teal-600', 'text-white');
+        elements.btnCamera.classList.remove('bg-gradient-to-r', 'from-blue-600', 'to-blue-700', 'text-white');
         elements.btnCamera.classList.add('text-slate-400');
         elements.deviceArea.classList.remove('hidden');
         elements.cameraArea.classList.add('hidden');
+        stopCamera();
       });
 
       elements.btnCamera.addEventListener('click', () => {
-        state.imageSource = 'camera';
-        elements.btnCamera.classList.add('bg-gradient-to-r', 'from-emerald-600', 'to-teal-600', 'text-white');
+        elements.btnCamera.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-blue-700', 'text-white');
         elements.btnCamera.classList.remove('text-slate-400');
-        elements.btnDevice.classList.remove('bg-gradient-to-r', 'from-emerald-600', 'to-teal-600', 'text-white');
+        elements.btnDevice.classList.remove('bg-gradient-to-r', 'from-blue-600', 'to-blue-700', 'text-white');
         elements.btnDevice.classList.add('text-slate-400');
-        elements.deviceArea.classList.add('hidden');
         elements.cameraArea.classList.remove('hidden');
-        startCamera();
+        elements.deviceArea.classList.add('hidden');
       });
 
       elements.fileDrop.addEventListener('click', () => elements.fileInput.click());
       elements.fileInput.addEventListener('change', (e) => handleFilesSelected(e.target.files));
+      
+      elements.fileDrop.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        elements.fileDrop.classList.add('border-blue-500', 'bg-blue-950/30');
+      });
+      
+      elements.fileDrop.addEventListener('dragleave', () => {
+        elements.fileDrop.classList.remove('border-blue-500', 'bg-blue-950/30');
+      });
+      
+      elements.fileDrop.addEventListener('drop', (e) => {
+        e.preventDefault();
+        elements.fileDrop.classList.remove('border-blue-500', 'bg-blue-950/30');
+        handleFilesSelected(e.dataTransfer.files);
+      });
 
       elements.btnStartCamera.addEventListener('click', startCamera);
+      elements.btnStopCamera.addEventListener('click', stopCamera);
       elements.btnSwitchCamera.addEventListener('click', toggleFacingMode);
       elements.btnCapture.addEventListener('click', capturePhoto);
-      elements.btnStopCamera.addEventListener('click', stopCamera);
 
       elements.btnUpload.addEventListener('click', executeProjectCreation);
+      elements.btnBackAdmin.addEventListener('click', showAdminView);
+      elements.btnCopyClientLink.addEventListener('click', () => copyLink(state.selectedProjectId));
+      elements.btnClearLogs.addEventListener('click', () => {
+        state.logs = [];
+        renderLogs();
+      });
 
       elements.lightbox.addEventListener('click', () => {
         elements.lightbox.classList.add('hidden');
       });
 
-      elements.btnCopyClientLink.addEventListener('click', () => copyLink(state.selectedProjectId));
+      elements.clientNameInput.addEventListener('input', (e) => state.clientName = e.target.value);
+      elements.projectTitleInput.addEventListener('input', (e) => state.projectTitle = e.target.value);
+      elements.reportTextInput.addEventListener('input', (e) => state.reportText = e.target.value);
 
-      elements.btnClearLogs.addEventListener('click', () => {
-        state.logs = [];
-        renderLogs();
-      });
+      addLog('Sistema', 'Aplicación inicializada correctamente', 'SUCCESS');
+      
+      autoConnectSupabase();
     }
 
-    window.removeImage = removeImage;
-    window.viewClient = viewClient;
-    window.copyLink = copyLink;
-    window.deleteProject = deleteProject;
-    window.showLightbox = showLightbox;
-
-    document.addEventListener('DOMContentLoaded', init);
+    init();
   </script>
 </body>
 </html>
