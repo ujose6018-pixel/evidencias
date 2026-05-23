@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#6366f1">
+  <link rel="manifest" href="/manifest.json">
   <title>Workspace con Cámara - Supabase</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -19,12 +21,12 @@
     .animate-pulse-custom { animation: pulse 1s infinite; }
     .animate-spin-custom { animation: spin 1s linear infinite; }
     .glass {
-      background: rgba(15, 23, 42, 0.8);
+      background: rgba(30, 41, 59, 0.8);
       backdrop-filter: blur(12px);
     }
   </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 font-sans">
+<body class="min-h-screen bg-gradient-to-br from-indigo-900 via-slate-800 to-purple-900 text-slate-100 font-sans">
   
   <!-- Toast Notificaciones -->
   <div id="toast" class="fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-2xl flex items-center gap-3 border hidden transition-all duration-300"></div>
@@ -41,8 +43,8 @@
   <nav class="glass border-b border-slate-800 px-4 py-3.5 sticky top-0 z-40 shadow-lg">
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <div class="bg-gradient-to-br from-blue-600/20 to-purple-600/20 p-2.5 rounded-2xl border border-blue-500/30">
-          <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="bg-gradient-to-br from-indigo-600/20 to-purple-600/20 p-2.5 rounded-2xl border border-indigo-500/30">
+          <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
           </svg>
         </div>
@@ -95,17 +97,17 @@
           <div class="grid grid-cols-1 gap-4 text-xs">
             <div>
               <label class="block text-slate-400 font-semibold mb-1">Supabase Project URL</label>
-              <input id="supabase-url" type="text" placeholder="https://tu-proyecto.supabase.co" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono" />
+              <input id="supabase-url" type="text" placeholder="https://tu-proyecto.supabase.co" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono" />
             </div>
             <div>
               <label class="block text-slate-400 font-semibold mb-1">Supabase Public Key (anon)</label>
-              <input id="supabase-key" type="password" placeholder="sb_publishable_..." class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono" />
+              <input id="supabase-key" type="password" placeholder="sb_publishable_..." class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono" />
             </div>
             <div class="flex gap-3">
-              <button id="btn-save-credentials" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg">
+              <button id="btn-save-credentials" class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg">
                 💾 Guardar Credenciales
               </button>
-              <button id="btn-test-connection" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg">
+              <button id="btn-test-connection" class="flex-1 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg">
                 🔍 Verificar Conexión
               </button>
             </div>
@@ -121,17 +123,17 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
               <label class="block text-slate-400 font-semibold mb-1">Nombre del Cliente / Razón Social</label>
-              <input id="client-name" type="text" placeholder="Ej. Condominio San Ignacio" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" />
+              <input id="client-name" type="text" placeholder="Ej. Condominio San Ignacio" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" />
             </div>
             <div>
               <label class="block text-slate-400 font-semibold mb-1">Título de la Tarea / Obra</label>
-              <input id="project-title" type="text" placeholder="Ej. Saneamiento y Pintado de Tuberías" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" />
+              <input id="project-title" type="text" placeholder="Ej. Saneamiento y Pintado de Tuberías" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" />
             </div>
           </div>
 
           <div class="text-xs">
             <label class="block text-slate-400 font-semibold mb-1">Cuerpo / Descripción del Informe</label>
-            <textarea id="report-text" rows="4" placeholder="Describe de forma cronológica las tareas realizadas, reparaciones hechas, materiales usados..." class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"></textarea>
+            <textarea id="report-text" rows="4" placeholder="Describe de forma cronológica las tareas realizadas, reparaciones hechas, materiales usados..." class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none"></textarea>
           </div>
 
           <!-- SECCIÓN HÍBRIDA DE CAPTURA DE FOTOS -->
@@ -142,7 +144,7 @@
               <span class="text-xs font-bold text-slate-300">Evidencia Fotográfica</span>
               
               <div class="flex bg-slate-950/80 p-1.5 rounded-xl border border-slate-800 text-[10px]">
-                <button id="btn-device" type="button" class="px-3.5 py-1.5 rounded-lg font-semibold transition bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                <button id="btn-device" type="button" class="px-3.5 py-1.5 rounded-lg font-semibold transition bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
                   📁 Galería Interna
                 </button>
                 <button id="btn-camera" type="button" class="px-3.5 py-1.5 rounded-lg font-semibold transition text-slate-400">
@@ -174,7 +176,7 @@
                     </svg>
                     <p class="text-sm font-semibold text-slate-300 mt-3">La cámara está desactivada</p>
                     <p id="camera-error" class="text-[11px] text-red-400 mt-2 max-w-xs hidden"></p>
-                    <button id="btn-start-camera" type="button" class="mt-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg">
+                    <button id="btn-start-camera" type="button" class="mt-4 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg">
                       Activar Lente
                     </button>
                   </div>
@@ -207,7 +209,7 @@
           </div>
 
           <!-- Botón de Sincronización final -->
-          <button id="btn-upload" class="w-full py-3.5 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white hover:shadow-emerald-500/30">
+          <button id="btn-upload" class="w-full py-3.5 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white hover:shadow-indigo-500/30">
             💾 Guardar y Generar Enlace Único
           </button>
         </div>
@@ -278,16 +280,16 @@
 
         <div id="client-content" class="p-6 md:p-8 space-y-6 hidden">
           <div class="flex flex-wrap gap-3">
-            <button id="btn-export-pdf" class="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-all shadow-lg">
+            <button id="btn-export-pdf" class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-all shadow-lg">
               📄 Exportar a PDF
             </button>
-            <button id="btn-export-txt" class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-all shadow-lg">
+            <button id="btn-export-txt" class="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-all shadow-lg">
               📝 Exportar a TXT
             </button>
           </div>
           <div class="space-y-3">
             <h3 class="text-xs uppercase font-mono tracking-wider text-slate-400 font-bold border-b border-slate-800 pb-3 flex items-center gap-2">
-              <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               Resumen Escrito del Servicio
@@ -432,7 +434,7 @@
         const typeColors = {
           'ERROR': 'bg-red-500/20 text-red-400',
           'SUCCESS': 'bg-green-500/20 text-green-400',
-          'INFO': 'bg-blue-500/20 text-blue-400'
+          'INFO': 'bg-blue-500/20 text-indigo-400'
         };
         return `
           <div class="border-b border-slate-800/40 pb-1.5 last:border-0 flex items-start gap-2">
@@ -573,7 +575,7 @@
                 </svg>
                 Ver Portal
               </button>
-              <button onclick="copyLink('${p.id}')" class="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600 hover:to-indigo-600 text-blue-300 hover:text-white py-2 px-3 rounded-xl flex items-center gap-1.5 font-semibold transition-all">
+              <button onclick="copyLink('${p.id}')" class="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 hover:from-indigo-600 hover:to-purple-600 text-indigo-300 hover:text-white py-2 px-3 rounded-xl flex items-center gap-1.5 font-semibold transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                 </svg>
@@ -952,7 +954,7 @@
         <div class="w-5 h-5 border-2 border-slate-300 border-t-white rounded-full animate-spin-custom"></div>
         Guardando...
       `;
-      elements.btnUpload.classList.remove('from-emerald-600', 'to-teal-600', 'hover:from-emerald-700', 'hover:to-teal-700');
+      elements.btnUpload.classList.remove('from-indigo-600', 'to-purple-600', 'hover:from-indigo-700', 'hover:to-purple-700');
       elements.btnUpload.classList.add('bg-slate-800', 'text-slate-500', 'cursor-not-allowed');
       elements.btnUpload.disabled = true;
       addLog('Sincronizador', 'Construyendo estructura de datos...', 'INFO');
@@ -1041,7 +1043,7 @@
         state.isUploading = false;
         elements.btnUpload.innerHTML = '💾 Guardar y Generar Enlace Único';
         elements.btnUpload.classList.remove('bg-slate-800', 'text-slate-500', 'cursor-not-allowed');
-        elements.btnUpload.classList.add('from-emerald-600', 'to-teal-600', 'hover:from-emerald-700', 'hover:to-teal-700');
+        elements.btnUpload.classList.add('from-indigo-600', 'to-purple-600', 'hover:from-indigo-700', 'hover:to-purple-700');
         elements.btnUpload.disabled = false;
         
         const message = savedToSupabase 
@@ -1076,7 +1078,7 @@
         state.isUploading = false;
         elements.btnUpload.innerHTML = '💾 Guardar y Generar Enlace Único';
         elements.btnUpload.classList.remove('bg-slate-800', 'text-slate-500', 'cursor-not-allowed');
-        elements.btnUpload.classList.add('from-emerald-600', 'to-teal-600', 'hover:from-emerald-700', 'hover:to-teal-700');
+        elements.btnUpload.classList.add('from-indigo-600', 'to-purple-600', 'hover:from-indigo-700', 'hover:to-purple-700');
         elements.btnUpload.disabled = false;
         
         addLog('Sistema', 'Guardado localmente exitosamente', 'SUCCESS');
@@ -1100,9 +1102,9 @@
       }
 
       elements.btnDevice.addEventListener('click', () => {
-        elements.btnDevice.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-blue-700', 'text-white');
+        elements.btnDevice.classList.add('bg-gradient-to-r', 'from-indigo-600', 'to-purple-600', 'text-white');
         elements.btnDevice.classList.remove('text-slate-400');
-        elements.btnCamera.classList.remove('bg-gradient-to-r', 'from-blue-600', 'to-blue-700', 'text-white');
+        elements.btnCamera.classList.remove('bg-gradient-to-r', 'from-indigo-600', 'to-purple-600', 'text-white');
         elements.btnCamera.classList.add('text-slate-400');
         elements.deviceArea.classList.remove('hidden');
         elements.cameraArea.classList.add('hidden');
@@ -1110,9 +1112,9 @@
       });
 
       elements.btnCamera.addEventListener('click', () => {
-        elements.btnCamera.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-blue-700', 'text-white');
+        elements.btnCamera.classList.add('bg-gradient-to-r', 'from-indigo-600', 'to-purple-600', 'text-white');
         elements.btnCamera.classList.remove('text-slate-400');
-        elements.btnDevice.classList.remove('bg-gradient-to-r', 'from-blue-600', 'to-blue-700', 'text-white');
+        elements.btnDevice.classList.remove('bg-gradient-to-r', 'from-indigo-600', 'to-purple-600', 'text-white');
         elements.btnDevice.classList.add('text-slate-400');
         elements.cameraArea.classList.remove('hidden');
         elements.deviceArea.classList.add('hidden');
@@ -1123,16 +1125,16 @@
       
       elements.fileDrop.addEventListener('dragover', (e) => {
         e.preventDefault();
-        elements.fileDrop.classList.add('border-blue-500', 'bg-blue-950/30');
+        elements.fileDrop.classList.add('border-indigo-500', 'bg-indigo-950/30');
       });
       
       elements.fileDrop.addEventListener('dragleave', () => {
-        elements.fileDrop.classList.remove('border-blue-500', 'bg-blue-950/30');
+        elements.fileDrop.classList.remove('border-indigo-500', 'bg-indigo-950/30');
       });
       
       elements.fileDrop.addEventListener('drop', (e) => {
         e.preventDefault();
-        elements.fileDrop.classList.remove('border-blue-500', 'bg-blue-950/30');
+        elements.fileDrop.classList.remove('border-indigo-500', 'bg-indigo-950/30');
         handleFilesSelected(e.dataTransfer.files);
       });
 
@@ -1162,6 +1164,16 @@
       elements.btnExportPdf.addEventListener('click', exportToPdf);
       elements.btnExportTxt.addEventListener('click', exportToTxt);
 
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            addLog('PWA', 'Service Worker registrado correctamente', 'SUCCESS');
+          })
+          .catch(error => {
+            addLog('PWA', `Error al registrar Service Worker: ${error}`, 'ERROR');
+          });
+      }
+      
       addLog('Sistema', 'Aplicación inicializada correctamente', 'SUCCESS');
       
       autoConnectSupabase();
