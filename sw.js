@@ -1,12 +1,11 @@
-const CACHE_NAME = 'informe-tecnico-v2';
+const CACHE_NAME = 'informe-tecnico-v3';
 const urlsToCache = [
   './index.html',
   './manifest.json',
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-  'https://cdn.jsdelivr.net/npm/docx@8.2.0/build/index.js',
-  'https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js'
 ];
 
 self.addEventListener('install', event => {

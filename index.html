@@ -4,13 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#6366f1">
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="./manifest.json">
   <title>Workspace con Cámara - Supabase</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/docx@8.2.0/build/index.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     @keyframes pulse {
       0%, 100% { opacity: 1; }
@@ -59,6 +58,9 @@
       </div>
 
       <div class="flex items-center gap-3">
+        <button id="btn-install-pwa" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-lg hidden">
+          📱 Instalar App
+        </button>
         <button id="btn-back-admin" class="glass hover:bg-slate-800/50 border border-slate-700 text-slate-200 text-xs px-3.5 py-1.5 rounded-xl transition hidden">
           ← Volver al Panel
         </button>
@@ -414,6 +416,7 @@
       year: document.getElementById('year'),
       logsContainer: document.getElementById('logs-container'),
       btnClearLogs: document.getElementById('btn-clear-logs'),
+      btnInstallPwa: document.getElementById('btn-install-pwa'),
       realModeConfig: document.getElementById('real-mode-config'),
       btnToggleCredentials: document.getElementById('btn-toggle-credentials'),
       supabaseUrlInput: document.getElementById('supabase-url'),
@@ -850,6 +853,25 @@
       elements.lightbox.classList.remove('hidden');
     }
 
+    async function imageUrlToBase64(url) {
+      if (url.startsWith('data:image')) {
+        return url;
+      }
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (error) {
+        console.error('Error converting image to base64:', error);
+        return null;
+      }
+    }
+
     function downloadImage(url, index) {
       const a = document.createElement('a');
       a.href = url;
@@ -947,8 +969,12 @@
               xPos = marginLeft;
             }
 
-            const imgData = project.photos[i];
-            if (imgData.startsWith('data:image')) {
+            let imgData = project.photos[i];
+            if (!imgData.startsWith('data:image')) {
+              imgData = await imageUrlToBase64(imgData);
+            }
+            
+            if (imgData) {
               doc.addImage(imgData, 'JPEG', xPos, yPos, imgWidth, imgHeight);
               doc.setFont('helvetica', 'normal');
               doc.setFontSize(10);
@@ -971,104 +997,50 @@
     }
 
     async function exportToWord() {
-      const { Document, Packer, Paragraph, TextRun, ImageRun, HeadingLevel, AlignmentType, WidthType, BorderStyle } = window.docx;
       const project = state.projects.find(p => p.id === state.selectedProjectId);
       if (!project) return;
 
-      const children = [
-        new Paragraph({
-          text: 'Informe Técnico',
-          heading: HeadingLevel.TITLE,
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 400 }
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: 'Proyecto: ',
-              bold: true,
-              size: 24
-            }),
-            new TextRun({
-              text: project.projectTitle,
-              size: 24
-            })
-          ],
-          spacing: { after: 200 }
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: 'Cliente: ',
-              bold: true,
-              size: 24
-            }),
-            new TextRun({
-              text: project.clientName,
-              size: 24
-            })
-          ],
-          spacing: { after: 200 }
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: 'Fecha: ',
-              bold: true,
-              size: 24
-            }),
-            new TextRun({
-              text: project.date,
-              size: 24
-            })
-          ],
-          spacing: { after: 400 }
-        }),
-        new Paragraph({
-          text: 'Resumen del Informe',
-          heading: HeadingLevel.HEADING_1,
-          spacing: { after: 200 }
-        }),
-        new Paragraph({
-          text: project.reportText,
-          spacing: { after: 400, line: 360 }
-        })
-      ];
+      let htmlContent = `
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+  <meta charset='utf-8'>
+  <title>Informe Técnico - ${project.projectTitle}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12pt; margin: 2.54cm; }
+    h1 { font-size: 18pt; text-align: center; color: #333; margin-bottom: 24pt; }
+    h2 { font-size: 14pt; color: #333; margin-top: 24pt; margin-bottom: 12pt; }
+    .info { margin-bottom: 12pt; }
+    .info strong { display: inline-block; width: 80pt; }
+    .report-text { line-height: 1.5; margin-bottom: 24pt; }
+    .image-container { text-align: center; margin: 24pt 0; }
+    .image-container img { max-width: 400pt; height: auto; }
+    .image-caption { text-align: center; font-style: italic; margin-top: 8pt; }
+  </style>
+</head>
+<body>
+  <h1>Informe Técnico</h1>
+  <div class='info'><strong>Proyecto:</strong> ${project.projectTitle}</div>
+  <div class='info'><strong>Cliente:</strong> ${project.clientName}</div>
+  <div class='info'><strong>Fecha:</strong> ${project.date}</div>
+  <h2>Resumen del Informe</h2>
+  <div class='report-text'>${project.reportText.replace(/\n/g, '<br>')}</div>
+`;
 
       if (project.photos && project.photos.length > 0) {
-        children.push(new Paragraph({
-          text: 'Evidencias Fotográficas',
-          heading: HeadingLevel.HEADING_1,
-          spacing: { after: 200 }
-        }));
-
+        htmlContent += '<h2>Evidencias Fotográficas</h2>';
         for (let i = 0; i < project.photos.length; i++) {
           try {
-            const imgData = project.photos[i];
-            if (imgData.startsWith('data:image')) {
-              const base64Data = imgData.split(',')[1];
-              children.push(
-                new Paragraph({
-                  alignment: AlignmentType.CENTER,
-                  children: [
-                    new ImageRun({
-                      data: Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)),
-                      transformation: { width: 400, height: 400 }
-                    })
-                  ],
-                  spacing: { after: 200 }
-                }),
-                new Paragraph({
-                  text: `Evidencia ${i + 1}`,
-                  alignment: AlignmentType.CENTER,
-                  spacing: { after: 400 }
-                })
-              );
-            } else {
-              children.push(new Paragraph({
-                text: `Evidencia ${i + 1}: ${imgData}`,
-                spacing: { after: 200 }
-              }));
+            let imgData = project.photos[i];
+            if (!imgData.startsWith('data:image')) {
+              imgData = await imageUrlToBase64(imgData);
+            }
+            if (imgData) {
+              htmlContent += `
+    <div class='image-container'>
+      <img src='${imgData}' alt='Evidencia ${i + 1}'>
+      <div class='image-caption'>Evidencia ${i + 1}</div>
+    </div>
+`;
             }
           } catch (e) {
             console.error('Error adding image to Word:', e);
@@ -1076,15 +1048,13 @@
         }
       }
 
-      const doc = new Document({
-        sections: [{
-          properties: {},
-          children: children
-        }]
-      });
+      htmlContent += `
+</body>
+</html>
+`;
 
-      const blob = await Packer.toBlob(doc);
-      window.saveAs(blob, `Informe_${project.projectTitle.replace(/\s+/g, '_')}.docx`);
+      const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+      window.saveAs(blob, `Informe_${project.projectTitle.replace(/\s+/g, '_')}.doc`);
       showToast('Informe exportado a Word!');
     }
 
@@ -1231,8 +1201,37 @@
       }
     }
 
+    let deferredPrompt;
+
     function init() {
       elements.year.textContent = new Date().getFullYear();
+      
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        elements.btnInstallPwa.classList.remove('hidden');
+        addLog('PWA', 'App lista para instalar!', 'SUCCESS');
+      });
+      
+      elements.btnInstallPwa.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          addLog('PWA', 'App instalada exitosamente!', 'SUCCESS');
+          showToast('App instalada exitosamente!', 'success');
+        } else {
+          addLog('PWA', 'Instalación cancelada', 'INFO');
+        }
+        deferredPrompt = null;
+        elements.btnInstallPwa.classList.add('hidden');
+      });
+      
+      window.addEventListener('appinstalled', () => {
+        addLog('PWA', 'App instalada correctamente', 'SUCCESS');
+        deferredPrompt = null;
+        elements.btnInstallPwa.classList.add('hidden');
+      });
       
       const savedProjects = localStorage.getItem('drive_cam_projects');
       if (savedProjects) {
@@ -1311,12 +1310,14 @@
       elements.btnExportTxt.addEventListener('click', exportToTxt);
 
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker.register('./sw.js')
           .then(registration => {
             addLog('PWA', 'Service Worker registrado correctamente', 'SUCCESS');
+            console.log('SW registered:', registration);
           })
           .catch(error => {
             addLog('PWA', `Error al registrar Service Worker: ${error}`, 'ERROR');
+            console.error('SW registration failed:', error);
           });
       }
       
