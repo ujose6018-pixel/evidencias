@@ -231,126 +231,146 @@
         <!-- Formulario de Viáticos y Gastos -->
         <div id="section-expenses" class="bg-slate-950/70 backdrop-blur-xl border border-slate-800/70 rounded-3xl p-6 shadow-2xl space-y-5 hidden">
           <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
-            💰 Registro de Viáticos y Gastos
+            💰 Reporte Diario de Gastos
           </h2>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label class="block text-slate-400 font-semibold mb-1">Tipo de Gasto</label>
-              <select id="expense-type" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
-                <option value="">Selecciona un tipo...</option>
-                <option value="comida">🍔 Comida y Alimentación</option>
-                <option value="transporte">🚗 Transporte</option>
-                <option value="alojamiento">🏨 Alojamiento</option>
-                <option value="combustible">⛽ Combustible</option>
-                <option value="peajes">🛣️ Peajes</option>
-                <option value="materiales">🔧 Materiales</option>
-                <option value="servicios">📞 Servicios</option>
-                <option value="otros">📦 Otros</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-slate-400 font-semibold mb-1">Monto ($)</label>
-              <input id="expense-amount" type="number" step="0.01" placeholder="Ej. 150.00" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" />
-            </div>
-          </div>
-
+          <!-- Fecha del Reporte -->
           <div class="text-xs">
-            <label class="block text-slate-400 font-semibold mb-1">Descripción del Gasto</label>
-            <textarea id="expense-description" rows="3" placeholder="Detalla el gasto realizado..." class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none"></textarea>
+            <label class="block text-slate-400 font-semibold mb-1">Fecha del Reporte</label>
+            <input id="expense-report-date" type="date" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" />
           </div>
 
-          <!-- SECCIÓN HÍBRIDA DE CAPTURA DE FOTOS PARA GASTOS -->
-          <div class="border border-slate-800 rounded-2xl overflow-hidden bg-slate-900/30">
-            
-            <!-- Selector de origen -->
-            <div class="bg-slate-900/80 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-300">Foto de Factura / Comprobante</span>
-              
-              <div class="flex bg-slate-950/80 p-1.5 rounded-xl border border-slate-800 text-[10px]">
-                <button id="expense-btn-device" type="button" class="px-3.5 py-1.5 rounded-lg font-semibold transition bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
-                  📁 Galería
-                </button>
-                <button id="expense-btn-camera" type="button" class="px-3.5 py-1.5 rounded-lg font-semibold transition text-slate-400">
-                  📷 Tomar Foto (Alta Calidad)
-                </button>
-              </div>
+          <!-- Lista de Gastos Añadidos -->
+          <div id="expenses-list-container" class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Gastos del Día</span>
+              <span id="expenses-total" class="text-sm font-bold text-emerald-400">Total: $0.00</span>
             </div>
-            
-            <!-- Área Dinámica -->
-            <div class="p-4">
-              <!-- Input para subir archivos -->
-              <div id="expense-device-area" class="space-y-4">
-                <div id="expense-file-drop" class="border-2 border-dashed border-slate-700 rounded-xl p-8 text-center transition-all cursor-pointer hover:border-indigo-500 hover:bg-indigo-500/10">
-                  <input id="expense-file-input" type="file" accept="image/*" class="hidden" />
-                  <svg class="w-10 h-10 mx-auto text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <p class="mt-2 text-sm font-semibold text-slate-300">Arrastra y suelta o haz clic aquí</p>
-                  <p class="text-[11px] text-slate-500 mt-1">PNG, JPG, JPEG hasta 10MB</p>
-                </div>
-              </div>
-
-              <!-- Área de Cámara -->
-              <div id="expense-camera-area" class="space-y-4 hidden">
-                <div id="expense-camera-off" class="flex flex-col items-center justify-center py-6">
-                  <svg class="w-10 h-10 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  <p class="text-sm font-semibold text-slate-300 mt-3">Cámara desactivada</p>
-                  <button id="expense-btn-start-camera" type="button" class="mt-4 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg">
-                    Activar Cámara (Alta Calidad)
-                  </button>
-                </div>
-                <div id="expense-camera-on" class="relative w-full aspect-video bg-black items-center justify-center hidden">
-                  <video id="expense-video" autoplay playsinline class="w-full h-full object-cover"></video>
-                  <div class="absolute bottom-5 inset-x-0 flex items-center justify-center gap-5 z-10 px-5">
-                    <button id="expense-btn-switch-camera" type="button" class="glass p-3 rounded-full text-slate-200 border border-slate-700 transition-all">
-                      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    </button>
-                    <button id="expense-btn-capture" type="button" class="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center transition-all shadow-xl hover:scale-105 border-4 border-slate-800">
-                      <div class="w-10 h-10 rounded-full bg-white"></div>
-                    </button>
-                    <button id="expense-btn-flash" type="button" class="glass p-3 rounded-full text-slate-200 border border-slate-700 transition-all">
-                      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    </button>
-                  </div>
-                  <canvas id="expense-canvas" class="hidden"></canvas>
-                </div>
-              </div>
+            <div id="expenses-list" class="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+              <p class="text-[11px] text-slate-500 italic text-center py-4">No hay gastos añadidos aún</p>
             </div>
+          </div>
 
-            <!-- Vista previa de imagen -->
-            <div id="expense-preview-container" class="px-4 pb-4 hidden">
-              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Factura / Comprobante</p>
-              <div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-slate-700 bg-slate-900">
-                <img id="expense-preview-img" class="w-full h-full object-contain" src="" alt="Factura" />
-                <div id="expense-blur-warning" class="absolute inset-0 bg-red-900/80 backdrop-blur-sm hidden flex flex-col items-center justify-center text-center p-4">
-                  <svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <p class="text-white font-bold mt-2">⚠️ Imagen Borrosa</p>
-                  <p class="text-xs text-white/80 mt-1">Por favor, toma una foto más clara</p>
-                  <button id="expense-btn-retry" class="mt-3 bg-white text-red-700 text-xs font-bold px-4 py-2 rounded-lg">
-                    🔄 Volver a Tomar
-                  </button>
-                </div>
-                <button id="expense-btn-remove" type="button" class="absolute top-3 right-3 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg transition-all">
-                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <!-- Botón para Añadir Nuevo Gasto -->
+          <button id="btn-add-expense-item" type="button" class="w-full py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-dashed border-slate-700">
+            <span class="text-xl">+</span> Añadir Gasto
+          </button>
+
+          <!-- Modal para Añadir/Editar Gasto -->
+          <div id="expense-item-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl">
+              <div class="flex items-center justify-between mb-5">
+                <h3 class="text-sm font-bold text-slate-200">Añadir Gasto</h3>
+                <button id="btn-close-expense-modal" type="button" class="text-slate-500 hover:text-slate-300">
+                  <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
+
+              <div class="space-y-4 text-xs">
+                <div>
+                  <label class="block text-slate-400 font-semibold mb-1">Tipo de Gasto</label>
+                  <select id="expense-item-type" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
+                    <option value="">Selecciona un tipo...</option>
+                    <option value="comida">🍔 Comida y Alimentación</option>
+                    <option value="transporte">🚗 Transporte</option>
+                    <option value="alojamiento">🏨 Alojamiento</option>
+                    <option value="combustible">⛽ Combustible</option>
+                    <option value="peajes">🛣️ Peajes</option>
+                    <option value="materiales">🔧 Materiales</option>
+                    <option value="servicios">📞 Servicios</option>
+                    <option value="otros">📦 Otros</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-slate-400 font-semibold mb-1">Monto ($)</label>
+                  <input id="expense-item-amount" type="number" step="0.01" placeholder="Ej. 150.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                </div>
+                <div>
+                  <label class="block text-slate-400 font-semibold mb-1">Descripción</label>
+                  <textarea id="expense-item-description" rows="2" placeholder="Detalla el gasto..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none"></textarea>
+                </div>
+
+                <!-- Foto de Factura -->
+                <div class="border border-slate-800 rounded-2xl overflow-hidden bg-slate-950">
+                  <div class="bg-slate-900 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-slate-300">Foto de Factura</span>
+                    <div class="flex bg-slate-950/80 p-1 rounded-xl border border-slate-800 text-[9px]">
+                      <button id="expense-item-btn-device" type="button" class="px-3 py-1 rounded-lg font-semibold transition bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
+                        📁 Galería
+                      </button>
+                      <button id="expense-item-btn-camera" type="button" class="px-3 py-1 rounded-lg font-semibold transition text-slate-400">
+                        📷 Cámara
+                      </button>
+                    </div>
+                  </div>
+                  <div class="p-4">
+                    <div id="expense-item-device-area" class="space-y-3">
+                      <div id="expense-item-file-drop" class="border-2 border-dashed border-slate-700 rounded-xl p-6 text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-500/10">
+                        <input id="expense-item-file-input" type="file" accept="image/*" class="hidden" />
+                        <svg class="w-8 h-8 mx-auto text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p class="mt-2 text-xs font-semibold text-slate-300">Haz clic para subir foto</p>
+                      </div>
+                    </div>
+                    <div id="expense-item-camera-area" class="space-y-3 hidden">
+                      <div id="expense-item-camera-off" class="flex flex-col items-center justify-center py-4">
+                        <p class="text-xs font-semibold text-slate-300">Cámara desactivada</p>
+                        <button id="expense-item-btn-start-camera" type="button" class="mt-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold py-2 px-4 rounded-xl">
+                          Activar Cámara
+                        </button>
+                      </div>
+                      <div id="expense-item-camera-on" class="relative w-full aspect-video bg-black rounded-xl overflow-hidden hidden">
+                        <video id="expense-item-video" autoplay playsinline class="w-full h-full object-cover"></video>
+                        <div class="absolute bottom-3 inset-x-0 flex items-center justify-center gap-3 z-10 px-3">
+                          <button id="expense-item-btn-switch-camera" type="button" class="glass p-2 rounded-full text-slate-200 border border-slate-700">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                          </button>
+                          <button id="expense-item-btn-capture" type="button" class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center border-3 border-slate-800">
+                            <div class="w-8 h-8 rounded-full bg-white"></div>
+                          </button>
+                        </div>
+                        <canvas id="expense-item-canvas" class="hidden"></canvas>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="expense-item-preview-container" class="px-4 pb-4 hidden">
+                    <div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-slate-700 bg-slate-900">
+                      <img id="expense-item-preview-img" class="w-full h-full object-contain" src="" alt="Factura" />
+                      <div id="expense-item-blur-warning" class="absolute inset-0 bg-red-900/80 backdrop-blur-sm hidden flex flex-col items-center justify-center text-center p-3">
+                        <p class="text-white font-bold text-xs">⚠️ Imagen Borrosa</p>
+                        <button id="expense-item-btn-retry" class="mt-2 bg-white text-red-700 text-[10px] font-bold px-3 py-1 rounded-lg">
+                          Volver a Tomar
+                        </button>
+                      </div>
+                      <button id="expense-item-btn-remove" type="button" class="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-full">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex gap-3 mt-6">
+                <button id="btn-cancel-expense-item" type="button" class="flex-1 py-2.5 rounded-xl font-bold text-sm bg-slate-800 text-slate-300 hover:bg-slate-700">
+                  Cancelar
+                </button>
+                <button id="btn-confirm-expense-item" type="button" class="flex-1 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
+                  Añadir
+                </button>
+              </div>
             </div>
           </div>
 
-          <!-- Botón de Guardar Gasto -->
-          <button id="btn-save-expense" class="w-full py-3.5 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white hover:shadow-teal-500/30">
-            💾 Guardar Gasto
+          <!-- Botón de Guardar Reporte Completo -->
+          <button id="btn-save-expense-report" class="w-full py-3.5 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white">
+            💾 Guardar Reporte Completo
           </button>
         </div>
       </div>
@@ -483,7 +503,7 @@
       view: 'admin',
       activeTab: 'technical',
       projects: [],
-      expenses: [],
+      expenseReports: [],
       selectedProjectId: null,
       supabaseUrl: localStorage.getItem('supabase_url') || 'https://snqfoqslgxelisezeqqc.supabase.co',
       supabaseKey: localStorage.getItem('supabase_key') || 'sb_publishable_-YUywAvjOPQ23akv61M-5g_ERpDvyS_',
@@ -504,17 +524,14 @@
       video: null,
       canvas: null,
       credentialsVisible: false,
-      expenseType: '',
-      expenseAmount: '',
-      expenseDescription: '',
-      expenseImage: null,
-      expenseImageSource: 'device',
-      expenseCameraActive: false,
-      expenseFacingMode: 'environment',
-      expenseStream: null,
-      expenseVideo: null,
-      expenseCanvas: null,
-      expenseFlashActive: false
+      // New expense report state
+      currentExpenseItems: [],
+      currentExpenseItem: null,
+      expenseItemImage: null,
+      expenseItemImageSource: 'device',
+      expenseItemCameraActive: false,
+      expenseItemFacingMode: 'environment',
+      expenseItemStream: null
     };
 
     const elements = {
@@ -582,29 +599,38 @@
       btnExportPdf: document.getElementById('btn-export-pdf'),
       btnExportWord: document.getElementById('btn-export-word'),
       btnExportTxt: document.getElementById('btn-export-txt'),
-      expenseTypeInput: document.getElementById('expense-type'),
-      expenseAmountInput: document.getElementById('expense-amount'),
-      expenseDescriptionInput: document.getElementById('expense-description'),
-      expenseBtnDevice: document.getElementById('expense-btn-device'),
-      expenseBtnCamera: document.getElementById('expense-btn-camera'),
-      expenseDeviceArea: document.getElementById('expense-device-area'),
-      expenseCameraArea: document.getElementById('expense-camera-area'),
-      expenseFileDrop: document.getElementById('expense-file-drop'),
-      expenseFileInput: document.getElementById('expense-file-input'),
-      expenseCameraOff: document.getElementById('expense-camera-off'),
-      expenseCameraOn: document.getElementById('expense-camera-on'),
-      expenseBtnStartCamera: document.getElementById('expense-btn-start-camera'),
-      expenseBtnSwitchCamera: document.getElementById('expense-btn-switch-camera'),
-      expenseBtnCapture: document.getElementById('expense-btn-capture'),
-      expenseBtnFlash: document.getElementById('expense-btn-flash'),
-      expenseVideo: document.getElementById('expense-video'),
-      expenseCanvas: document.getElementById('expense-canvas'),
-      expensePreviewContainer: document.getElementById('expense-preview-container'),
-      expensePreviewImg: document.getElementById('expense-preview-img'),
-      expenseBlurWarning: document.getElementById('expense-blur-warning'),
-      expenseBtnRetry: document.getElementById('expense-btn-retry'),
-      expenseBtnRemove: document.getElementById('expense-btn-remove'),
-      btnSaveExpense: document.getElementById('btn-save-expense')
+      // New expense report elements
+      expenseReportDate: document.getElementById('expense-report-date'),
+      expensesListContainer: document.getElementById('expenses-list-container'),
+      expensesList: document.getElementById('expenses-list'),
+      expensesTotal: document.getElementById('expenses-total'),
+      btnAddExpenseItem: document.getElementById('btn-add-expense-item'),
+      expenseItemModal: document.getElementById('expense-item-modal'),
+      btnCloseExpenseModal: document.getElementById('btn-close-expense-modal'),
+      expenseItemType: document.getElementById('expense-item-type'),
+      expenseItemAmount: document.getElementById('expense-item-amount'),
+      expenseItemDescription: document.getElementById('expense-item-description'),
+      expenseItemBtnDevice: document.getElementById('expense-item-btn-device'),
+      expenseItemBtnCamera: document.getElementById('expense-item-btn-camera'),
+      expenseItemDeviceArea: document.getElementById('expense-item-device-area'),
+      expenseItemCameraArea: document.getElementById('expense-item-camera-area'),
+      expenseItemFileDrop: document.getElementById('expense-item-file-drop'),
+      expenseItemFileInput: document.getElementById('expense-item-file-input'),
+      expenseItemCameraOff: document.getElementById('expense-item-camera-off'),
+      expenseItemCameraOn: document.getElementById('expense-item-camera-on'),
+      expenseItemBtnStartCamera: document.getElementById('expense-item-btn-start-camera'),
+      expenseItemBtnSwitchCamera: document.getElementById('expense-item-btn-switch-camera'),
+      expenseItemBtnCapture: document.getElementById('expense-item-btn-capture'),
+      expenseItemVideo: document.getElementById('expense-item-video'),
+      expenseItemCanvas: document.getElementById('expense-item-canvas'),
+      expenseItemPreviewContainer: document.getElementById('expense-item-preview-container'),
+      expenseItemPreviewImg: document.getElementById('expense-item-preview-img'),
+      expenseItemBlurWarning: document.getElementById('expense-item-blur-warning'),
+      expenseItemBtnRetry: document.getElementById('expense-item-btn-retry'),
+      expenseItemBtnRemove: document.getElementById('expense-item-btn-remove'),
+      btnCancelExpenseItem: document.getElementById('btn-cancel-expense-item'),
+      btnConfirmExpenseItem: document.getElementById('btn-confirm-expense-item'),
+      btnSaveExpenseReport: document.getElementById('btn-save-expense-report')
     };
 
     function addLog(service, detail, type = 'INFO') {
@@ -1095,6 +1121,352 @@
         };
         img.src = imageSrc;
       });
+    }
+
+    // Helper function for expense type labels
+    const getExpenseTypeLabel = (type) => {
+      const labels = {
+        'comida': '🍔 Comida',
+        'transporte': '🚗 Transporte',
+        'alojamiento': '🏨 Alojamiento',
+        'combustible': '⛽ Combustible',
+        'peajes': '🛣️ Peajes',
+        'materiales': '🔧 Materiales',
+        'servicios': '📞 Servicios',
+        'otros': '📦 Otros'
+      };
+      return labels[type] || type;
+    };
+
+    // Expense item modal functions
+    function openExpenseItemModal() {
+      state.currentExpenseItem = {
+        id: 'temp-' + Date.now(),
+        type: '',
+        amount: 0,
+        description: '',
+        receipt: null
+      };
+      state.expenseItemImage = null;
+      
+      // Reset form
+      elements.expenseItemType.value = '';
+      elements.expenseItemAmount.value = '';
+      elements.expenseItemDescription.value = '';
+      elements.expenseItemPreviewContainer.classList.add('hidden');
+      elements.expenseItemDeviceArea.classList.remove('hidden');
+      elements.expenseItemCameraArea.classList.add('hidden');
+      elements.expenseItemBlurWarning.classList.add('hidden');
+      
+      elements.expenseItemModal.classList.remove('hidden');
+    }
+
+    function closeExpenseItemModal() {
+      stopExpenseItemCamera();
+      elements.expenseItemModal.classList.add('hidden');
+    }
+
+    async function startExpenseItemCamera() {
+      if (state.expenseItemStream) {
+        stopExpenseItemCamera();
+      }
+
+      try {
+        const constraints = {
+          video: {
+            facingMode: state.expenseItemFacingMode,
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        };
+
+        state.expenseItemStream = await navigator.mediaDevices.getUserMedia(constraints);
+        elements.expenseItemVideo.srcObject = state.expenseItemStream;
+        elements.expenseItemCameraOff.classList.add('hidden');
+        elements.expenseItemCameraOn.classList.remove('hidden');
+        state.expenseItemCameraActive = true;
+      } catch (error) {
+        showToast('Error al activar la cámara', 'error');
+      }
+    }
+
+    function stopExpenseItemCamera() {
+      if (state.expenseItemStream) {
+        state.expenseItemStream.getTracks().forEach(track => track.stop());
+        state.expenseItemStream = null;
+      }
+      elements.expenseItemCameraOff.classList.remove('hidden');
+      elements.expenseItemCameraOn.classList.add('hidden');
+      state.expenseItemCameraActive = false;
+    }
+
+    function toggleExpenseItemFacingMode() {
+      state.expenseItemFacingMode = state.expenseItemFacingMode === 'user' ? 'environment' : 'user';
+      if (state.expenseItemCameraActive) {
+        startExpenseItemCamera();
+      }
+    }
+
+    async function captureExpenseItemPhoto() {
+      const video = elements.expenseItemVideo;
+      const canvas = elements.expenseItemCanvas;
+      const context = canvas.getContext('2d');
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const base64Image = canvas.toDataURL('image/jpeg', 0.95);
+      state.expenseItemImage = base64Image;
+      state.currentExpenseItem.receipt = base64Image;
+
+      elements.expenseItemPreviewImg.src = base64Image;
+      elements.expenseItemPreviewContainer.classList.remove('hidden');
+      elements.expenseItemDeviceArea.classList.add('hidden');
+      elements.expenseItemCameraArea.classList.add('hidden');
+      
+      stopExpenseItemCamera();
+
+      const isBlurry = await isImageBlurry(base64Image);
+      if (isBlurry) {
+        elements.expenseItemBlurWarning.classList.remove('hidden');
+        showToast('⚠️ Imagen borrosa, por favor retoma la foto', 'error');
+      } else {
+        elements.expenseItemBlurWarning.classList.add('hidden');
+      }
+    }
+
+    function handleExpenseItemFileSelected(file) {
+      if (!file.type.startsWith('image/')) return;
+      
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        state.expenseItemImage = e.target.result;
+        state.currentExpenseItem.receipt = e.target.result;
+        
+        elements.expenseItemPreviewImg.src = e.target.result;
+        elements.expenseItemPreviewContainer.classList.remove('hidden');
+        elements.expenseItemDeviceArea.classList.add('hidden');
+        elements.expenseItemCameraArea.classList.add('hidden');
+        
+        const isBlurry = await isImageBlurry(e.target.result);
+        if (isBlurry) {
+          elements.expenseItemBlurWarning.classList.remove('hidden');
+          showToast('⚠️ Imagen borrosa, por favor usa otra', 'error');
+        } else {
+          elements.expenseItemBlurWarning.classList.add('hidden');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeExpenseItemImage() {
+      state.expenseItemImage = null;
+      state.currentExpenseItem.receipt = null;
+      elements.expenseItemPreviewContainer.classList.add('hidden');
+      elements.expenseItemDeviceArea.classList.remove('hidden');
+      elements.expenseItemBlurWarning.classList.add('hidden');
+    }
+
+    function confirmExpenseItem() {
+      const type = elements.expenseItemType.value;
+      const amount = parseFloat(elements.expenseItemAmount.value);
+      const description = elements.expenseItemDescription.value;
+
+      if (!type || !amount || isNaN(amount)) {
+        showToast('Por favor completa tipo y monto', 'error');
+        return;
+      }
+
+      state.currentExpenseItem.type = type;
+      state.currentExpenseItem.amount = amount;
+      state.currentExpenseItem.description = description;
+      state.currentExpenseItem.id = 'item-' + Date.now();
+
+      state.currentExpenseItems.push({ ...state.currentExpenseItem });
+      
+      renderCurrentExpenseItems();
+      closeExpenseItemModal();
+    }
+
+    function renderCurrentExpenseItems() {
+      if (state.currentExpenseItems.length === 0) {
+        elements.expensesList.innerHTML = '<p class="text-[11px] text-slate-500 italic text-center py-4">No hay gastos añadidos aún</p>';
+        elements.expensesTotal.textContent = 'Total: $0.00';
+        return;
+      }
+
+      const total = state.currentExpenseItems.reduce((sum, item) => sum + item.amount, 0);
+      elements.expensesTotal.textContent = `Total: $${total.toFixed(2)}`;
+
+      elements.expensesList.innerHTML = state.currentExpenseItems.map((item, index) => `
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-base">${getExpenseTypeLabel(item.type).split(' ')[0]}</span>
+                <span class="text-sm font-semibold text-slate-200">${getExpenseTypeLabel(item.type).split(' ').slice(1).join(' ')}</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1 truncate">${item.description || 'Sin descripción'}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-emerald-400">$${item.amount.toFixed(2)}</span>
+              <button onclick="removeCurrentExpenseItem(${index})" class="text-slate-500 hover:text-red-400">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function removeCurrentExpenseItem(index) {
+      state.currentExpenseItems.splice(index, 1);
+      renderCurrentExpenseItems();
+    }
+
+    function saveExpenseReport() {
+      const date = elements.expenseReportDate.value;
+
+      if (!date) {
+        showToast('Por favor selecciona la fecha del reporte', 'error');
+        return;
+      }
+
+      if (state.currentExpenseItems.length === 0) {
+        showToast('Por favor añade al menos un gasto', 'error');
+        return;
+      }
+
+      const report = {
+        id: 'report-' + Date.now(),
+        date: date,
+        items: [...state.currentExpenseItems],
+        total: state.currentExpenseItems.reduce((sum, item) => sum + item.amount, 0),
+        createdAt: new Date().toISOString()
+      };
+
+      state.expenseReports.unshift(report);
+      localStorage.setItem('drive_cam_expense_reports', JSON.stringify(state.expenseReports));
+
+      // Reset form
+      state.currentExpenseItems = [];
+      elements.expenseReportDate.value = new Date().toISOString().split('T')[0];
+      renderCurrentExpenseItems();
+
+      addLog('Gastos', 'Reporte guardado exitosamente', 'SUCCESS');
+      showToast('¡Reporte guardado exitosamente!', 'success');
+      renderItems();
+    }
+
+    function renderItems() {
+      if (state.activeTab === 'technical') {
+        renderProjects();
+      } else {
+        renderExpenseReports();
+      }
+    }
+
+    function renderProjects() {
+      if (state.projects.length === 0) {
+        elements.noItems.classList.remove('hidden');
+        elements.itemsContainer.classList.add('hidden');
+        return;
+      }
+
+      elements.noItems.classList.add('hidden');
+      elements.itemsContainer.classList.remove('hidden');
+      
+      elements.itemsContainer.innerHTML = state.projects.map(p => `
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-slate-200 truncate">${p.projectTitle}</p>
+              <p class="text-xs text-slate-500 truncate">${p.clientName}</p>
+            </div>
+            <button onclick="deleteProject('${p.id}')" class="text-slate-600 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-950/30">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+          <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between gap-2 text-xs">
+            <span class="text-slate-500">📅 ${p.date}</span>
+            <div class="flex gap-2">
+              <button onclick="viewClient('${p.id}')" class="bg-slate-800 hover:bg-slate-750 text-slate-200 py-2 px-3 rounded-xl border border-slate-700 flex items-center gap-1.5 font-semibold transition-all">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                Ver Portal
+              </button>
+              <button onclick="copyLink('${p.id}')" class="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 hover:from-indigo-600 hover:to-purple-600 text-indigo-300 hover:text-white py-2 px-3 rounded-xl flex items-center gap-1.5 font-semibold transition-all">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+                Compartir Enlace
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderExpenseReports() {
+      if (state.expenseReports.length === 0) {
+        elements.noItems.classList.remove('hidden');
+        elements.itemsContainer.classList.add('hidden');
+        return;
+      }
+
+      elements.noItems.classList.add('hidden');
+      elements.itemsContainer.classList.remove('hidden');
+
+      elements.itemsContainer.innerHTML = state.expenseReports.map(report => `
+        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-slate-200">📊 Reporte de Gastos</p>
+              <p class="text-lg font-bold text-emerald-400">$${report.total.toFixed(2)}</p>
+              <p class="text-xs text-slate-500">${report.items.length} gasto(s)</p>
+            </div>
+            <button onclick="deleteExpenseReport('${report.id}')" class="text-slate-600 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-950/30">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+          <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between gap-2 text-xs">
+            <span class="text-slate-500">📅 ${new Date(report.date).toLocaleDateString()}</span>
+            <button onclick="viewExpenseReport('${report.id}')" class="bg-slate-800 hover:bg-slate-750 text-slate-200 py-2 px-3 rounded-xl border border-slate-700 flex items-center gap-1.5 font-semibold transition-all">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              Ver Reporte
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function deleteExpenseReport(id) {
+      state.expenseReports = state.expenseReports.filter(r => r.id !== id);
+      localStorage.setItem('drive_cam_expense_reports', JSON.stringify(state.expenseReports));
+      renderItems();
+      showToast('Reporte eliminado');
+      addLog('Gastos', 'Reporte eliminado', 'INFO');
+    }
+
+    function viewExpenseReport(id) {
+      const report = state.expenseReports.find(r => r.id === id);
+      if (!report) return;
+
+      // Create a simple view for expense reports
+      alert(`Reporte de ${new Date(report.date).toLocaleDateString()}\nTotal: $${report.total.toFixed(2)}\n${report.items.length} gastos`);
     }
 
     function switchTab(tab) {
@@ -1748,10 +2120,13 @@
         state.projects = JSON.parse(savedProjects);
       }
       
-      const savedExpenses = localStorage.getItem('drive_cam_expenses');
-      if (savedExpenses) {
-        state.expenses = JSON.parse(savedExpenses);
+      const savedExpenseReports = localStorage.getItem('drive_cam_expense_reports');
+      if (savedExpenseReports) {
+        state.expenseReports = JSON.parse(savedExpenseReports);
       }
+      
+      // Set default date to today
+      elements.expenseReportDate.value = new Date().toISOString().split('T')[0];
       
       renderItems();
 
@@ -1810,34 +2185,40 @@
       elements.btnCapture.addEventListener('click', capturePhoto);
       elements.btnUpload.addEventListener('click', executeProjectCreation);
 
-      // Expense tab listeners
-      elements.expenseBtnDevice.addEventListener('click', () => {
-        elements.expenseBtnDevice.classList.add('bg-gradient-to-r', 'from-indigo-600', 'to-purple-600', 'text-white');
-        elements.expenseBtnDevice.classList.remove('text-slate-400');
-        elements.expenseBtnCamera.classList.remove('bg-gradient-to-r', 'from-indigo-600', 'to-purple-600', 'text-white');
-        elements.expenseBtnCamera.classList.add('text-slate-400');
-        elements.expenseDeviceArea.classList.remove('hidden');
-        elements.expenseCameraArea.classList.add('hidden');
-        expenseStopCamera();
+      // New expense report listeners
+      elements.btnAddExpenseItem.addEventListener('click', openExpenseItemModal);
+      elements.btnCloseExpenseModal.addEventListener('click', closeExpenseItemModal);
+      elements.btnCancelExpenseItem.addEventListener('click', closeExpenseItemModal);
+      elements.btnConfirmExpenseItem.addEventListener('click', confirmExpenseItem);
+      elements.btnSaveExpenseReport.addEventListener('click', saveExpenseReport);
+      
+      // Expense item modal listeners
+      elements.expenseItemBtnDevice.addEventListener('click', () => {
+        elements.expenseItemBtnDevice.classList.add('bg-gradient-to-r', 'from-indigo-500', 'to-purple-500', 'text-white');
+        elements.expenseItemBtnDevice.classList.remove('text-slate-400');
+        elements.expenseItemBtnCamera.classList.remove('bg-gradient-to-r', 'from-indigo-500', 'to-purple-500', 'text-white');
+        elements.expenseItemBtnCamera.classList.add('text-slate-400');
+        elements.expenseItemDeviceArea.classList.remove('hidden');
+        elements.expenseItemCameraArea.classList.add('hidden');
+        stopExpenseItemCamera();
       });
 
-      elements.expenseBtnCamera.addEventListener('click', () => {
-        elements.expenseBtnCamera.classList.add('bg-gradient-to-r', 'from-indigo-600', 'to-purple-600', 'text-white');
-        elements.expenseBtnCamera.classList.remove('text-slate-400');
-        elements.expenseBtnDevice.classList.remove('bg-gradient-to-r', 'from-indigo-600', 'to-purple-600', 'text-white');
-        elements.expenseBtnDevice.classList.add('text-slate-400');
-        elements.expenseCameraArea.classList.remove('hidden');
-        elements.expenseDeviceArea.classList.add('hidden');
+      elements.expenseItemBtnCamera.addEventListener('click', () => {
+        elements.expenseItemBtnCamera.classList.add('bg-gradient-to-r', 'from-indigo-500', 'to-purple-500', 'text-white');
+        elements.expenseItemBtnCamera.classList.remove('text-slate-400');
+        elements.expenseItemBtnDevice.classList.remove('bg-gradient-to-r', 'from-indigo-500', 'to-purple-500', 'text-white');
+        elements.expenseItemBtnDevice.classList.add('text-slate-400');
+        elements.expenseItemCameraArea.classList.remove('hidden');
+        elements.expenseItemDeviceArea.classList.add('hidden');
       });
 
-      elements.expenseFileDrop.addEventListener('click', () => elements.expenseFileInput.click());
-      elements.expenseFileInput.addEventListener('change', (e) => expenseHandleFileSelected(e.target.files[0]));
-      elements.expenseBtnStartCamera.addEventListener('click', expenseStartCamera);
-      elements.expenseBtnSwitchCamera.addEventListener('click', expenseToggleFacingMode);
-      elements.expenseBtnCapture.addEventListener('click', expenseCapturePhoto);
-      elements.expenseBtnRemove.addEventListener('click', expenseRemoveImage);
-      elements.expenseBtnRetry.addEventListener('click', expenseRemoveImage);
-      elements.btnSaveExpense.addEventListener('click', saveExpense);
+      elements.expenseItemFileDrop.addEventListener('click', () => elements.expenseItemFileInput.click());
+      elements.expenseItemFileInput.addEventListener('change', (e) => handleExpenseItemFileSelected(e.target.files[0]));
+      elements.expenseItemBtnStartCamera.addEventListener('click', startExpenseItemCamera);
+      elements.expenseItemBtnSwitchCamera.addEventListener('click', toggleExpenseItemFacingMode);
+      elements.expenseItemBtnCapture.addEventListener('click', captureExpenseItemPhoto);
+      elements.expenseItemBtnRemove.addEventListener('click', removeExpenseItemImage);
+      elements.expenseItemBtnRetry.addEventListener('click', removeExpenseItemImage);
 
       // General listeners
       elements.btnBackAdmin.addEventListener('click', showAdminView);
