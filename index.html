@@ -2,10 +2,12 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#6366f1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+  <meta name="theme-color" content="#10b981">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="./manifest.json">
-  <title>Workspace con Cámara - Supabase</title>
+  <title>Workspace - Reportes Profesionales</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -22,46 +24,68 @@
     .animate-pulse-custom { animation: pulse 1s infinite; }
     .animate-spin-custom { animation: spin 1s linear infinite; }
     .glass {
-      background: rgba(30, 41, 59, 0.8);
-      backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+    }
+    /* Mejoras para touch */
+    button, input, select, textarea {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    /* Mejoras para inputs en iOS */
+    input[type="date"], input[type="number"], select, textarea {
+      font-size: 16px;
+    }
+    /* Evitar zoom en iOS al tocar inputs */
+    @media screen and (-webkit-min-device-pixel-ratio: 0) {
+      select, textarea, input {
+        font-size: 16px;
+      }
+    }
+    /* Padding seguro para iPhone con notch */
+    @supports (padding-top: env(safe-area-inset-top)) {
+      body {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
     }
   </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-indigo-900 via-slate-800 to-purple-900 text-slate-100 font-sans">
+<body class="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-violet-50 text-slate-800 font-sans">
   
   <!-- Toast Notificaciones -->
-  <div id="toast" class="fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-2xl flex items-center gap-3 border hidden transition-all duration-300"></div>
+  <div id="toast" class="fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-xl flex items-center gap-3 border border-white/30 bg-white/95 text-slate-800 hidden transition-all duration-300"></div>
 
   <!-- Lightbox / Visor de Fotos -->
-  <div id="lightbox" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out hidden">
-    <img id="lightbox-img" class="max-h-[90vh] max-w-full rounded-2xl shadow-2xl object-contain" alt="Evidencia Ampliada" />
-    <div class="absolute bottom-6 glass px-4 py-2 rounded-full text-[11px] text-slate-400">
+  <div id="lightbox" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out hidden">
+    <img id="lightbox-img" class="max-h-[90vh] max-w-full rounded-3xl shadow-2xl object-contain" alt="Evidencia Ampliada" />
+    <div class="absolute bottom-6 glass px-5 py-3 rounded-full text-sm text-slate-700 font-medium shadow-lg border border-white/30">
       Toca cualquier punto para cerrar la vista
     </div>
   </div>
 
   <!-- Barra superior de Navegación -->
-  <nav class="glass border-b border-slate-800 px-4 py-3.5 sticky top-0 z-40 shadow-lg">
+  <nav class="glass border-b border-white/50 px-4 py-4 sticky top-0 z-40 shadow-xl">
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <div class="bg-gradient-to-br from-indigo-600/20 to-purple-600/20 p-2.5 rounded-2xl border border-indigo-500/30">
-          <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-3 rounded-2xl shadow-lg shadow-emerald-500/30">
+          <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
           </svg>
         </div>
         <div>
-          <h1 class="text-base font-bold flex items-center gap-2">
-            Workspace con Cámara <span class="text-[9px] uppercase font-mono tracking-wider bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 px-2 py-0.5 rounded-full">Supabase</span>
+          <h1 class="text-lg font-extrabold flex items-center gap-2 text-slate-800">
+            Workspace <span class="text-xs uppercase font-mono tracking-widest bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-3 py-1 rounded-full shadow-md">PROFESIONAL</span>
           </h1>
-          <p class="text-[10px] text-slate-400">Genera informes capturando fotos al instante o cargándolas de tu galería</p>
+          <p class="text-sm text-slate-500 font-medium">Reportes técnicos y gastos, todo en un solo lugar</p>
         </div>
       </div>
 
       <div class="flex items-center gap-3">
-        <button id="btn-install-pwa" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-lg hidden">
+        <button id="btn-install-pwa" class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-500/30 hidden">
           📱 Instalar App
         </button>
-        <button id="btn-back-admin" class="glass hover:bg-slate-800/50 border border-slate-700 text-slate-200 text-xs px-3.5 py-1.5 rounded-xl transition hidden">
+        <button id="btn-back-admin" class="glass hover:bg-white border border-slate-200 text-slate-700 text-sm font-semibold px-4 py-2 rounded-xl transition-all hover:shadow-md">
           ← Volver al Panel
         </button>
       </div>
@@ -76,17 +100,17 @@
       <div class="lg:col-span-7 flex flex-col gap-6">
         
         <!-- Estado de Conexión -->
-        <div id="connection-status" class="bg-gradient-to-br from-slate-900/70 to-slate-800/70 border border-slate-700/70 p-4 rounded-2xl">
+        <div id="connection-status" class="bg-white border border-slate-200 p-5 rounded-3xl shadow-xl shadow-slate-200/50">
           <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-3">
-              <div id="connection-indicator" class="w-3 h-3 rounded-full bg-slate-500"></div>
+              <div id="connection-indicator" class="w-4 h-4 rounded-full bg-slate-400"></div>
               <div>
-                <span id="connection-status-text" class="text-sm font-semibold text-slate-300">Conectando...</span>
-                <p id="connection-error" class="text-[10px] text-slate-500 mt-1">Verificando conexión con Supabase</p>
+                <span id="connection-status-text" class="text-base font-semibold text-slate-700">Conectando...</span>
+                <p id="connection-error" class="text-sm text-slate-500 mt-1">Verificando conexión con Supabase</p>
               </div>
             </div>
             <div class="text-right">
-              <button id="btn-toggle-credentials" class="glass hover:bg-slate-800/50 border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-xl transition">
+              <button id="btn-toggle-credentials" class="glass border border-slate-300 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition-all hover:bg-white hover:shadow-md">
                 ⚙️ Configurar Credenciales
               </button>
             </div>
@@ -94,34 +118,34 @@
         </div>
 
         <!-- Tabs de Navegación -->
-        <div class="flex gap-2 p-1 bg-slate-900/70 rounded-xl border border-slate-700/70">
-          <button id="tab-technical" class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-bold py-2.5 px-4 rounded-lg transition-all shadow-lg">
+        <div class="flex gap-2 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-md">
+          <button id="tab-technical" class="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-bold py-3 px-5 rounded-xl transition-all shadow-lg shadow-blue-500/30">
             📋 Informes Técnicos
           </button>
-          <button id="tab-expenses" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold py-2.5 px-4 rounded-lg transition-all">
+          <button id="tab-expenses" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold py-3 px-5 rounded-xl transition-all">
             💰 Viáticos y Gastos
           </button>
         </div>
 
         <!-- Configuración de Credenciales -->
-        <div id="real-mode-config" class="bg-slate-950/70 backdrop-blur-xl border border-slate-800/70 rounded-3xl p-6 shadow-2xl space-y-4 hidden">
-          <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+        <div id="real-mode-config" class="bg-white backdrop-blur-xl border border-slate-200 rounded-3xl p-7 shadow-xl shadow-slate-200/50 space-y-5 hidden">
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
             🔑 Configuración de Supabase
           </h2>
-          <div class="grid grid-cols-1 gap-4 text-xs">
+          <div class="grid grid-cols-1 gap-5 text-sm">
             <div>
-              <label class="block text-slate-400 font-semibold mb-1">Supabase Project URL</label>
-              <input id="supabase-url" type="text" placeholder="https://tu-proyecto.supabase.co" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono" />
+              <label class="block text-slate-600 font-semibold mb-2">Supabase Project URL</label>
+              <input id="supabase-url" type="text" placeholder="https://tu-proyecto.supabase.co" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono" />
             </div>
             <div>
-              <label class="block text-slate-400 font-semibold mb-1">Supabase Public Key (anon)</label>
-              <input id="supabase-key" type="password" placeholder="sb_publishable_..." class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono" />
+              <label class="block text-slate-600 font-semibold mb-2">Supabase Public Key (anon)</label>
+              <input id="supabase-key" type="password" placeholder="sb_publishable_..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono" />
             </div>
             <div class="flex gap-3">
-              <button id="btn-save-credentials" class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg">
+              <button id="btn-save-credentials" class="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-sm font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-blue-500/30 active:scale-[0.98]">
                 💾 Guardar Credenciales
               </button>
-              <button id="btn-test-connection" class="flex-1 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg">
+              <button id="btn-test-connection" class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-sm font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-emerald-500/30 active:scale-[0.98]">
                 🔍 Verificar Conexión
               </button>
             </div>
@@ -129,59 +153,59 @@
         </div>
 
         <!-- Formulario del Informe Técnico -->
-        <div id="section-technical" class="bg-slate-950/70 backdrop-blur-xl border border-slate-800/70 rounded-3xl p-6 shadow-2xl space-y-5">
-          <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+        <div id="section-technical" class="bg-white backdrop-blur-xl border border-slate-200 rounded-3xl p-7 shadow-xl shadow-slate-200/50 space-y-6">
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
             📝 Informe y Registro de Trabajo
           </h2>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm">
             <div>
-              <label class="block text-slate-400 font-semibold mb-1">Nombre del Cliente / Razón Social</label>
-              <input id="client-name" type="text" placeholder="Ej. Condominio San Ignacio" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+              <label class="block text-slate-600 font-semibold mb-2">Nombre del Cliente / Razón Social</label>
+              <input id="client-name" type="text" placeholder="Ej. Condominio San Ignacio" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" />
             </div>
             <div>
-              <label class="block text-slate-400 font-semibold mb-1">Título de la Tarea / Obra</label>
-              <input id="project-title" type="text" placeholder="Ej. Saneamiento y Pintado de Tuberías" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+              <label class="block text-slate-600 font-semibold mb-2">Título de la Tarea / Obra</label>
+              <input id="project-title" type="text" placeholder="Ej. Saneamiento y Pintado de Tuberías" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" />
             </div>
           </div>
 
-          <div class="text-xs">
-            <label class="block text-slate-400 font-semibold mb-1">Cuerpo / Descripción del Informe</label>
-            <textarea id="report-text" rows="4" placeholder="Describe de forma cronológica las tareas realizadas, reparaciones hechas, materiales usados..." class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none"></textarea>
+          <div class="text-sm">
+            <label class="block text-slate-600 font-semibold mb-2">Cuerpo / Descripción del Informe</label>
+            <textarea id="report-text" rows="4" placeholder="Describe de forma cronológica las tareas realizadas, reparaciones hechas, materiales usados..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"></textarea>
           </div>
 
           <!-- SECCIÓN HÍBRIDA DE CAPTURA DE FOTOS -->
-          <div class="border border-slate-800 rounded-2xl overflow-hidden bg-slate-900/30">
+          <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
             
             <!-- Selector de origen -->
-            <div class="bg-slate-900/80 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-300">Evidencia Fotográfica</span>
+            <div class="bg-slate-50 px-4 py-4 border-b border-slate-200 flex items-center justify-between">
+              <span class="text-sm font-bold text-slate-700">Evidencia Fotográfica</span>
               
-              <div class="flex bg-slate-950/80 p-1.5 rounded-xl border border-slate-800 text-[10px]">
-                <button id="btn-device" type="button" class="px-3.5 py-1.5 rounded-lg font-semibold transition bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
+              <div class="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs">
+                <button id="btn-device" type="button" class="px-4 py-2 rounded-lg font-semibold transition bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
                   📁 Galería Interna
                 </button>
-                <button id="btn-camera" type="button" class="px-3.5 py-1.5 rounded-lg font-semibold transition text-slate-400">
+                <button id="btn-camera" type="button" class="px-4 py-2 rounded-lg font-semibold transition text-slate-600">
                   📷 Tomar Foto
                 </button>
               </div>
             </div>
 
             <!-- Área Dinámica -->
-            <div class="p-4">
+            <div class="p-5">
               <div id="device-area">
-                <div id="file-drop" class="border-2 border-dashed border-slate-700 rounded-2xl py-8 px-4 text-center hover:border-blue-500 bg-slate-950/30 cursor-pointer transition-all duration-300 flex flex-col items-center justify-center hover:bg-slate-950/50">
+                <div id="file-drop" class="border-2 border-dashed border-slate-300 rounded-2xl py-10 px-5 text-center hover:border-blue-500 bg-slate-50 cursor-pointer transition-all duration-300 flex flex-col items-center justify-center hover:bg-blue-50 active:border-blue-400 active:bg-blue-100">
                   <input id="file-input" type="file" multiple accept="image/*" class="hidden" />
-                  <svg class="w-10 h-10 text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg class="w-12 h-12 text-slate-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                   </svg>
-                  <p class="text-sm font-semibold text-slate-300 mt-2">Buscar fotos en el almacenamiento</p>
-                  <p class="text-[11px] text-slate-500 mt-1">Soporta múltiples archivos JPG, PNG, WEBP</p>
+                  <p class="text-base font-semibold text-slate-700 mt-2">Buscar fotos en el almacenamiento</p>
+                  <p class="text-xs text-slate-500 mt-2">Soporta múltiples archivos JPG, PNG, WEBP</p>
                 </div>
               </div>
 
               <div id="camera-area" class="hidden">
-                <div class="relative rounded-2xl overflow-hidden bg-black flex flex-col items-center border border-slate-800">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 flex flex-col items-center border border-slate-200">
                   <div id="flash" class="absolute inset-0 bg-white z-20 hidden"></div>
                   <div id="camera-off" class="w-full aspect-video flex flex-col items-center justify-center p-8 text-center">
                     <svg class="w-12 h-12 text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -229,49 +253,49 @@
         </div>
 
         <!-- Formulario de Viáticos y Gastos -->
-        <div id="section-expenses" class="bg-slate-950/70 backdrop-blur-xl border border-slate-800/70 rounded-3xl p-6 shadow-2xl space-y-5 hidden">
-          <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+        <div id="section-expenses" class="bg-white backdrop-blur-xl border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-xl shadow-slate-200/50 space-y-5 hidden">
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
             💰 Reporte Diario de Gastos
           </h2>
 
           <!-- Fecha del Reporte -->
-          <div class="text-xs">
-            <label class="block text-slate-400 font-semibold mb-1">Fecha del Reporte</label>
-            <input id="expense-report-date" type="date" class="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+          <div class="text-sm">
+            <label class="block text-slate-600 font-semibold mb-2">Fecha del Reporte</label>
+            <input id="expense-report-date" type="date" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" />
           </div>
 
           <!-- Lista de Gastos Añadidos -->
           <div id="expenses-list-container" class="space-y-3">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Gastos del Día</span>
-              <span id="expenses-total" class="text-sm font-bold text-emerald-400">Total: $0.00</span>
+              <span class="text-xs sm:text-sm font-bold text-slate-600 uppercase tracking-wider">Gastos del Día</span>
+              <span id="expenses-total" class="text-base sm:text-sm font-bold text-emerald-600">Total: $0.00</span>
             </div>
-            <div id="expenses-list" class="space-y-2 max-h-[200px] overflow-y-auto pr-1">
-              <p class="text-[11px] text-slate-500 italic text-center py-4">No hay gastos añadidos aún</p>
+            <div id="expenses-list" class="space-y-3 max-h-[250px] overflow-y-auto pr-2">
+              <p class="text-xs sm:text-sm text-slate-600 italic text-center py-6">No hay gastos añadidos aún</p>
             </div>
           </div>
 
           <!-- Botón para Añadir Nuevo Gasto -->
-          <button id="btn-add-expense-item" type="button" class="w-full py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-dashed border-slate-700">
-            <span class="text-xl">+</span> Añadir Gasto
+          <button id="btn-add-expense-item" type="button" class="w-full py-4 sm:py-3 rounded-2xl font-bold text-base sm:text-sm transition-all flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-dashed border-slate-300 active:scale-[0.98]">
+            <span class="text-2xl sm:text-xl">+</span> Añadir Gasto
           </button>
 
           <!-- Modal para Añadir/Editar Gasto -->
-          <div id="expense-item-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl">
-              <div class="flex items-center justify-between mb-5">
-                <h3 class="text-sm font-bold text-slate-200">Añadir Gasto</h3>
-                <button id="btn-close-expense-modal" type="button" class="text-slate-500 hover:text-slate-300">
-                  <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          <div id="expense-item-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <div class="bg-white border border-slate-200 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-lg sm:max-w-md shadow-2xl shadow-slate-900/30 max-h-[90vh] overflow-y-auto">
+              <div class="flex items-center justify-between mb-6">
+                <h3 class="text-base sm:text-sm font-bold text-slate-800">Añadir Gasto</h3>
+                <button id="btn-close-expense-modal" type="button" class="text-slate-500 hover:text-slate-800 p-2 -mr-2 rounded-full hover:bg-slate-100 active:bg-slate-200">
+                  <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
-              <div class="space-y-4 text-xs">
+              <div class="space-y-5 text-xs sm:text-sm">
                 <div>
-                  <label class="block text-slate-400 font-semibold mb-1">Tipo de Gasto</label>
-                  <select id="expense-item-type" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
+                  <label class="block text-slate-700 font-semibold mb-2">Tipo de Gasto</label>
+                  <select id="expense-item-type" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                     <option value="">Selecciona un tipo...</option>
                     <option value="comida">🍔 Comida y Alimentación</option>
                     <option value="transporte">🚗 Transporte</option>
@@ -284,72 +308,72 @@
                   </select>
                 </div>
                 <div>
-                  <label class="block text-slate-400 font-semibold mb-1">Monto ($)</label>
-                  <input id="expense-item-amount" type="number" step="0.01" placeholder="Ej. 150.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                  <label class="block text-slate-700 font-semibold mb-2">Monto ($)</label>
+                  <input id="expense-item-amount" type="number" step="0.01" placeholder="Ej. 150.00" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" />
                 </div>
                 <div>
-                  <label class="block text-slate-400 font-semibold mb-1">Descripción</label>
-                  <textarea id="expense-item-description" rows="2" placeholder="Detalla el gasto..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none"></textarea>
+                  <label class="block text-slate-700 font-semibold mb-2">Descripción</label>
+                  <textarea id="expense-item-description" rows="3" placeholder="Detalla el gasto..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"></textarea>
                 </div>
 
                 <!-- Foto de Factura -->
-                <div class="border border-slate-800 rounded-2xl overflow-hidden bg-slate-950">
-                  <div class="bg-slate-900 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-                    <span class="text-[11px] font-bold text-slate-300">Foto de Factura</span>
-                    <div class="flex bg-slate-950/80 p-1 rounded-xl border border-slate-800 text-[9px]">
-                      <button id="expense-item-btn-device" type="button" class="px-3 py-1 rounded-lg font-semibold transition bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
+                <div class="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50">
+                  <div class="bg-white px-4 py-4 border-b border-slate-200 flex items-center justify-between">
+                    <span class="text-xs sm:text-sm font-bold text-slate-700">Foto de Factura</span>
+                    <div class="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs">
+                      <button id="expense-item-btn-device" type="button" class="flex-1 px-4 py-2 rounded-lg font-semibold transition bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/20">
                         📁 Galería
                       </button>
-                      <button id="expense-item-btn-camera" type="button" class="px-3 py-1 rounded-lg font-semibold transition text-slate-400">
+                      <button id="expense-item-btn-camera" type="button" class="flex-1 px-4 py-2 rounded-lg font-semibold transition text-slate-500">
                         📷 Cámara
                       </button>
                     </div>
                   </div>
-                  <div class="p-4">
-                    <div id="expense-item-device-area" class="space-y-3">
-                      <div id="expense-item-file-drop" class="border-2 border-dashed border-slate-700 rounded-xl p-6 text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-500/10">
+                  <div class="p-5">
+                    <div id="expense-item-device-area" class="space-y-4">
+                      <div id="expense-item-file-drop" class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 active:border-blue-400 active:bg-blue-100">
                         <input id="expense-item-file-input" type="file" accept="image/*" class="hidden" />
-                        <svg class="w-8 h-8 mx-auto text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="w-10 h-10 mx-auto text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
-                        <p class="mt-2 text-xs font-semibold text-slate-300">Haz clic para subir foto</p>
+                        <p class="mt-3 text-sm font-semibold text-slate-700">Toca para subir foto</p>
                       </div>
                     </div>
-                    <div id="expense-item-camera-area" class="space-y-3 hidden">
-                      <div id="expense-item-camera-off" class="flex flex-col items-center justify-center py-4">
-                        <p class="text-xs font-semibold text-slate-300">Cámara desactivada</p>
-                        <button id="expense-item-btn-start-camera" type="button" class="mt-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold py-2 px-4 rounded-xl">
+                    <div id="expense-item-camera-area" class="space-y-4 hidden">
+                      <div id="expense-item-camera-off" class="flex flex-col items-center justify-center py-6">
+                        <p class="text-sm font-semibold text-slate-700">Cámara desactivada</p>
+                        <button id="expense-item-btn-start-camera" type="button" class="mt-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-bold py-3 px-6 rounded-xl active:scale-[0.98] shadow-lg shadow-blue-500/20">
                           Activar Cámara
                         </button>
                       </div>
-                      <div id="expense-item-camera-on" class="relative w-full aspect-video bg-black rounded-xl overflow-hidden hidden">
+                      <div id="expense-item-camera-on" class="relative w-full aspect-video bg-slate-900 rounded-xl overflow-hidden hidden">
                         <video id="expense-item-video" autoplay playsinline class="w-full h-full object-cover"></video>
-                        <div class="absolute bottom-3 inset-x-0 flex items-center justify-center gap-3 z-10 px-3">
-                          <button id="expense-item-btn-switch-camera" type="button" class="glass p-2 rounded-full text-slate-200 border border-slate-700">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div class="absolute bottom-4 inset-x-0 flex items-center justify-center gap-4 z-10 px-4">
+                          <button id="expense-item-btn-switch-camera" type="button" class="bg-slate-800/80 backdrop-blur-sm p-3 rounded-full text-white border border-slate-700 active:scale-[0.95]">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                             </svg>
                           </button>
-                          <button id="expense-item-btn-capture" type="button" class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center border-3 border-slate-800">
-                            <div class="w-8 h-8 rounded-full bg-white"></div>
+                          <button id="expense-item-btn-capture" type="button" class="w-16 h-16 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center border-4 border-slate-800 active:scale-[0.95] shadow-lg shadow-blue-500/30">
+                            <div class="w-10 h-10 sm:w-8 sm:h-8 rounded-full bg-white"></div>
                           </button>
                         </div>
                         <canvas id="expense-item-canvas" class="hidden"></canvas>
                       </div>
                     </div>
                   </div>
-                  <div id="expense-item-preview-container" class="px-4 pb-4 hidden">
-                    <div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-slate-700 bg-slate-900">
+                  <div id="expense-item-preview-container" class="px-5 pb-5 hidden">
+                    <div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-slate-300 bg-slate-50">
                       <img id="expense-item-preview-img" class="w-full h-full object-contain" src="" alt="Factura" />
-                      <div id="expense-item-blur-warning" class="absolute inset-0 bg-red-900/80 backdrop-blur-sm hidden flex flex-col items-center justify-center text-center p-3">
-                        <p class="text-white font-bold text-xs">⚠️ Imagen Borrosa</p>
-                        <button id="expense-item-btn-retry" class="mt-2 bg-white text-red-700 text-[10px] font-bold px-3 py-1 rounded-lg">
+                      <div id="expense-item-blur-warning" class="absolute inset-0 bg-red-500/90 backdrop-blur-sm hidden flex flex-col items-center justify-center text-center p-4">
+                        <p class="text-white font-bold text-sm">⚠️ Imagen Borrosa</p>
+                        <button id="expense-item-btn-retry" class="mt-3 bg-white text-red-700 text-sm font-bold px-5 py-2 rounded-lg active:scale-[0.98]">
                           Volver a Tomar
                         </button>
                       </div>
-                      <button id="expense-item-btn-remove" type="button" class="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-full">
-                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      <button id="expense-item-btn-remove" type="button" class="absolute top-3 right-3 bg-red-500 hover:bg-red-600 text-white p-2.5 rounded-full active:scale-[0.95] shadow-lg shadow-red-500/30">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
                     </div>
@@ -357,11 +381,11 @@
                 </div>
               </div>
 
-              <div class="flex gap-3 mt-6">
-                <button id="btn-cancel-expense-item" type="button" class="flex-1 py-2.5 rounded-xl font-bold text-sm bg-slate-800 text-slate-300 hover:bg-slate-700">
+              <div class="flex gap-3 mt-8">
+                <button id="btn-cancel-expense-item" type="button" class="flex-1 py-4 rounded-xl font-bold text-base sm:text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-[0.98]">
                   Cancelar
                 </button>
-                <button id="btn-confirm-expense-item" type="button" class="flex-1 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
+                <button id="btn-confirm-expense-item" type="button" class="flex-1 py-4 rounded-xl font-bold text-base sm:text-sm bg-gradient-to-r from-blue-500 to-indigo-600 text-white active:scale-[0.98] shadow-lg shadow-blue-500/30">
                   Añadir
                 </button>
               </div>
@@ -369,7 +393,7 @@
           </div>
 
           <!-- Botón de Guardar Reporte Completo -->
-          <button id="btn-save-expense-report" class="w-full py-3.5 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white">
+          <button id="btn-save-expense-report" class="w-full py-4 sm:py-3.5 rounded-2xl font-bold text-base sm:text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white active:scale-[0.98]">
             💾 Guardar Reporte Completo
           </button>
         </div>
@@ -377,20 +401,20 @@
 
       <!-- Directorio de Trabajos Guardados (Lado Derecho) -->
       <div class="lg:col-span-5 space-y-6">
-        <div class="bg-slate-950/70 backdrop-blur-xl border border-slate-800/70 rounded-3xl p-6 shadow-2xl flex flex-col min-h-[450px]">
+        <div class="bg-white backdrop-blur-xl border border-slate-200 rounded-3xl p-6 shadow-xl shadow-slate-200/50 flex flex-col min-h-[450px]">
           <div class="mb-4">
-            <h2 class="text-sm font-bold text-slate-200">
+            <h2 class="text-lg font-bold text-slate-800">
               <span id="list-title">📁 Historial de Informes Registrados</span>
             </h2>
-            <p id="list-subtitle" class="text-[11px] text-slate-400 mt-1">Listado de proyectos almacenados</p>
+            <p id="list-subtitle" class="text-sm text-slate-500 mt-1">Listado de proyectos almacenados</p>
           </div>
 
           <div id="no-items" class="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-500">
-            <svg class="w-10 h-10 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-12 h-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
             </svg>
-            <p class="text-sm font-semibold mt-3 text-slate-400" id="no-items-text">No tienes carpetas de trabajos guardadas</p>
-            <p class="text-[11px] text-slate-600 max-w-[200px] mt-2">Completa el informe y adjunta fotos para empezar.</p>
+            <p class="text-lg font-semibold mt-4 text-slate-700" id="no-items-text">No tienes carpetas de trabajos guardadas</p>
+            <p class="text-sm text-slate-500 max-w-[200px] mt-2">Completa el informe y adjunta fotos para empezar.</p>
           </div>
 
           <div id="items-container" class="space-y-3 flex-1 overflow-y-auto max-h-[400px] pr-2 hidden">
@@ -402,66 +426,66 @@
 
   <!-- VISTA 2: PORTAL INTERMEDIARIO DEL CLIENTE -->
   <div id="client-view" class="hidden">
-    <main class="flex-1 bg-slate-950/50 p-4 lg:p-8">
-      <div class="max-w-4xl mx-auto bg-slate-950/70 backdrop-blur-xl rounded-3xl border border-slate-800 shadow-2xl overflow-hidden">
-        <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 md:p-8 border-b border-slate-800">
+    <main class="flex-1 bg-white/50 p-4 lg:p-8">
+      <div class="max-w-4xl mx-auto bg-white backdrop-blur-xl rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
+        <div class="bg-gradient-to-r from-emerald-50 via-blue-50 to-violet-50 p-6 md:p-8 border-b border-slate-200">
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <div class="flex items-center gap-2">
-                <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span class="text-[10px] uppercase font-mono tracking-wider text-green-400 font-bold">Informe Técnico</span>
+                <span class="text-xs uppercase font-mono tracking-wider text-emerald-600 font-bold">Informe Técnico</span>
               </div>
-              <h2 id="client-project-title" class="text-xl md:text-2xl font-bold text-slate-50 mt-3"></h2>
+              <h2 id="client-project-title" class="text-xl md:text-2xl font-bold text-slate-800 mt-3"></h2>
             </div>
             <div class="text-left sm:text-right">
-              <p class="text-[10px] text-slate-400 font-mono">ID de Proyecto:</p>
-              <p id="client-project-id" class="text-[10px] text-slate-500 font-mono truncate max-w-[180px]"></p>
+              <p class="text-xs text-slate-600 font-mono">ID de Proyecto:</p>
+              <p id="client-project-id" class="text-xs text-slate-500 font-mono truncate max-w-[180px]"></p>
             </div>
           </div>
 
-          <div id="client-meta" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-5 border-t border-slate-800 text-sm hidden">
-            <div class="flex items-center gap-2 text-slate-300">
+          <div id="client-meta" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-5 border-t border-slate-200 text-sm hidden">
+            <div class="flex items-center gap-2 text-slate-700">
               <span>Empresa/Cliente:</span>
-              <strong id="client-name-text" class="text-slate-100"></strong>
+              <strong id="client-name-text" class="text-slate-800"></strong>
             </div>
-            <div class="flex items-center gap-2 text-slate-300 sm:justify-end">
+            <div class="flex items-center gap-2 text-slate-700 sm:justify-end">
               <span>Fecha de Emisión:</span>
-              <strong id="client-date" class="text-slate-100"></strong>
+              <strong id="client-date" class="text-slate-800"></strong>
             </div>
           </div>
         </div>
 
-        <div id="client-loading" class="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
+        <div id="client-loading" class="p-12 text-center text-slate-600 flex flex-col items-center justify-center gap-3">
           <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin-custom"></div>
-          <p class="text-sm font-semibold text-slate-400">Cargando datos...</p>
+          <p class="text-sm font-semibold text-slate-700">Cargando datos...</p>
         </div>
 
         <div id="client-content" class="p-6 md:p-8 space-y-6 hidden">
           <div class="flex flex-wrap gap-3">
-            <button id="btn-export-pdf" class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-all shadow-lg">
+            <button id="btn-export-pdf" class="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-sm font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-blue-500/30 active:scale-[0.98]">
               📄 Exportar a PDF
             </button>
-            <button id="btn-export-word" class="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-all shadow-lg">
+            <button id="btn-export-word" class="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-sm font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-emerald-500/30 active:scale-[0.98]">
               📝 Exportar a Word
             </button>
-            <button id="btn-export-txt" class="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-all shadow-lg">
+            <button id="btn-export-txt" class="flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white text-sm font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-violet-500/30 active:scale-[0.98]">
               📋 Exportar a TXT
             </button>
           </div>
           <div class="space-y-3">
-            <h3 class="text-xs uppercase font-mono tracking-wider text-slate-400 font-bold border-b border-slate-800 pb-3 flex items-center gap-2">
-              <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <h3 class="text-xs uppercase font-mono tracking-wider text-slate-600 font-bold border-b border-slate-200 pb-3 flex items-center gap-2">
+              <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               Resumen Escrito del Servicio
             </h3>
-            <div id="client-report" class="bg-slate-950/85 p-6 rounded-2xl border border-slate-800 text-sm leading-relaxed text-slate-300 whitespace-pre-wrap"></div>
+            <div id="client-report" class="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-sm leading-relaxed text-slate-800 whitespace-pre-wrap"></div>
           </div>
 
           <div class="space-y-3">
-            <h3 class="text-xs uppercase font-mono tracking-wider text-slate-400 font-bold border-b border-slate-800 pb-3">
+            <h3 class="text-xs uppercase font-mono tracking-wider text-slate-600 font-bold border-b border-slate-200 pb-3">
               🖼️ Evidencias Fotográficas Adjuntas
             </h3>
             <div id="client-photos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4"></div>
@@ -472,7 +496,7 @@
           <p class="text-sm font-semibold">No se encontraron datos del proyecto.</p>
         </div>
 
-        <div class="bg-slate-950 p-6 text-center border-t border-slate-800 text-[11px] text-slate-500">
+        <div class="bg-slate-50 p-6 text-center border-t border-slate-200 text-xs text-slate-600">
           <p>© <span id="year"></span> Portal Técnico Integrado.</p>
         </div>
       </div>
@@ -480,18 +504,18 @@
   </div>
 
   <!-- CONSOLA DE INTERCAMBIOS DE RED -->
-  <footer class="bg-slate-950/70 backdrop-blur-xl border-t border-slate-800 p-4">
+  <footer class="bg-white/80 backdrop-blur-xl border-t border-slate-200 p-4 shadow-xl shadow-slate-200/30">
     <div class="max-w-7xl mx-auto">
       <div class="flex items-center justify-between mb-3">
-        <h3 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase font-mono">
+        <h3 class="text-xs font-bold tracking-wider text-slate-600 uppercase font-mono">
           📟 Consola del Sistema
         </h3>
-        <button id="btn-clear-logs" class="text-slate-600 hover:text-slate-400 text-[10px] font-semibold transition-colors">
+        <button id="btn-clear-logs" class="text-slate-600 hover:text-slate-800 text-xs font-semibold transition-colors">
           Limpiar Logs
         </button>
       </div>
-      <div id="logs-container" class="bg-slate-900 border border-slate-800 rounded-2xl p-4 font-mono text-[10px] text-slate-400 h-28 overflow-y-auto space-y-2">
-        <p class="text-slate-600 italic">Consola inactiva.</p>
+      <div id="logs-container" class="bg-slate-50 border border-slate-200 rounded-2xl p-4 font-mono text-xs text-slate-700 h-28 overflow-y-auto space-y-2">
+        <p class="text-slate-500 italic">Consola inactiva.</p>
       </div>
     </div>
   </footer>
@@ -641,20 +665,20 @@
 
     function renderLogs() {
       if (state.logs.length === 0) {
-        elements.logsContainer.innerHTML = '<p class="text-slate-600 italic">Consola inactiva.</p>';
+        elements.logsContainer.innerHTML = '<p class="text-slate-500 italic">Consola inactiva.</p>';
         return;
       }
       elements.logsContainer.innerHTML = state.logs.map(log => {
         const typeColors = {
-          'ERROR': 'bg-red-500/20 text-red-400',
-          'SUCCESS': 'bg-green-500/20 text-green-400',
-          'INFO': 'bg-blue-500/20 text-indigo-400'
+          'ERROR': 'bg-red-100 text-red-700',
+          'SUCCESS': 'bg-green-100 text-green-700',
+          'INFO': 'bg-blue-100 text-blue-700'
         };
         return `
-          <div class="border-b border-slate-800/40 pb-1.5 last:border-0 flex items-start gap-2">
-            <span class="text-slate-600 shrink-0">[${log.timestamp}]</span>
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-bold shrink-0 ${typeColors[log.type]}">${log.service}</span>
-            <pre class="whitespace-pre-wrap flex-1 text-slate-300 font-mono">${log.detail}</pre>
+          <div class="border-b border-slate-200 pb-1.5 last:border-0 flex items-start gap-2">
+            <span class="text-slate-500 shrink-0">[${log.timestamp}]</span>
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 ${typeColors[log.type]}">${log.service}</span>
+            <pre class="whitespace-pre-wrap flex-1 text-slate-700 font-mono">${log.detail}</pre>
           </div>
         `;
       }).join('');
@@ -662,8 +686,8 @@
 
     function showToast(message, type = 'success') {
       const bg = type === 'error' 
-        ? 'bg-gradient-to-r from-red-950 to-red-900 border-red-500 text-red-100' 
-        : 'bg-gradient-to-r from-slate-800 to-slate-900 border-green-500 text-green-100';
+        ? 'bg-gradient-to-r from-red-500 to-orange-500 border-red-400 text-white shadow-lg shadow-red-200' 
+        : 'bg-gradient-to-r from-blue-500 to-indigo-600 border-blue-400 text-white shadow-lg shadow-blue-200';
       const icon = type === 'error' ? '⚠️' : '✨';
       elements.toast.innerHTML = `<span>${icon}</span><span class="text-sm font-semibold">${message}</span>`;
       elements.toast.className = `fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-2xl flex items-center gap-3 border transition-all duration-300 ${bg}`;
@@ -680,31 +704,31 @@
         case 'connected':
           indicator.className = 'w-3 h-3 rounded-full bg-green-500 animate-pulse-custom shadow-lg shadow-green-500/40';
           statusText.textContent = '✅ Conexión estable';
-          statusText.className = 'text-sm font-semibold text-green-400';
+          statusText.className = 'text-sm font-semibold text-green-700';
           errorText.textContent = 'Todo funcionando correctamente';
-          errorText.className = 'text-[10px] text-green-500 mt-1';
+          errorText.className = 'text-xs text-green-600 mt-1';
           break;
         case 'missing-table':
           indicator.className = 'w-3 h-3 rounded-full bg-orange-500 animate-pulse-custom shadow-lg shadow-orange-500/40';
           statusText.textContent = '⚠️ Falta crear tabla';
-          statusText.className = 'text-sm font-semibold text-orange-400';
+          statusText.className = 'text-sm font-semibold text-orange-700';
           errorText.textContent = errorMsg || 'Crea la tabla "projects" en Supabase';
-          errorText.className = 'text-[10px] text-orange-500 mt-1';
+          errorText.className = 'text-xs text-orange-600 mt-1';
           break;
         case 'missing-bucket':
           indicator.className = 'w-3 h-3 rounded-full bg-orange-500 animate-pulse-custom shadow-lg shadow-orange-500/40';
           statusText.textContent = '⚠️ Falta crear bucket';
-          statusText.className = 'text-sm font-semibold text-orange-400';
+          statusText.className = 'text-sm font-semibold text-orange-700';
           errorText.textContent = errorMsg || 'Crea el bucket "project-photos" en Storage';
-          errorText.className = 'text-[10px] text-orange-500 mt-1';
+          errorText.className = 'text-xs text-orange-600 mt-1';
           break;
         case 'disconnected':
         default:
           indicator.className = 'w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/40';
           statusText.textContent = '❌ Sin conexión';
-          statusText.className = 'text-sm font-semibold text-red-400';
+          statusText.className = 'text-sm font-semibold text-red-700';
           errorText.textContent = errorMsg || 'Error de conexión con Supabase';
-          errorText.className = 'text-[10px] text-red-500 mt-1';
+          errorText.className = 'text-xs text-red-600 mt-1';
           break;
       }
     }
@@ -743,12 +767,12 @@
       elements.imagesContainer.classList.remove('hidden');
       elements.imagesCount.textContent = state.imageFiles.length;
       elements.imagesGrid.innerHTML = state.imageFiles.map(img => `
-        <div class="relative aspect-square rounded-xl overflow-hidden border border-slate-700 group bg-slate-950">
+        <div class="relative aspect-square rounded-xl overflow-hidden border border-slate-300 group bg-slate-50 shadow-md">
           <img src="${img.base64}" alt="${img.name}" class="w-full h-full object-cover" />
-          <div class="absolute top-1.5 left-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[8px] text-slate-300 truncate max-w-[80%]">
+          <div class="absolute top-1.5 left-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[8px] text-white truncate max-w-[80%]">
             ${img.id.startsWith('cam') ? '📷' : '📁'}
           </div>
-          <button onclick="removeImage('${img.id}')" class="absolute inset-0 bg-gradient-to-t from-red-950/95 to-red-900/80 text-red-100 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all text-xs font-bold">
+          <button onclick="removeImage('${img.id}')" class="absolute inset-0 bg-gradient-to-t from-red-600/95 to-red-500/80 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all text-xs font-bold">
             Quitar
           </button>
         </div>
@@ -764,32 +788,32 @@
       elements.noProjects.classList.add('hidden');
       elements.projectsContainer.classList.remove('hidden');
       elements.projectsContainer.innerHTML = state.projects.map(p => `
-        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-3 hover:border-slate-700 transition-all hover:shadow-lg">
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 hover:border-blue-300 transition-all hover:shadow-xl hover:shadow-blue-100/50">
           <div class="flex justify-between items-start gap-3">
             <div>
-              <span class="text-[9px] text-emerald-400 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-3 py-0.5 rounded-full font-semibold font-mono">
+              <span class="text-[10px] text-emerald-700 bg-gradient-to-r from-emerald-100 to-teal-100 px-3 py-0.5 rounded-full font-semibold font-mono">
                 Almacenado
               </span>
-              <h4 class="text-sm font-bold text-slate-100 mt-2">${p.projectTitle}</h4>
-              <p class="text-xs text-slate-400 mt-1">👤 ${p.clientName}</p>
+              <h4 class="text-sm font-bold text-slate-800 mt-2">${p.projectTitle}</h4>
+              <p class="text-xs text-slate-600 mt-1">👤 ${p.clientName}</p>
             </div>
-            <button onclick="deleteProject('${p.id}')" class="text-slate-600 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-950/30">
+            <button onclick="deleteProject('${p.id}')" class="text-slate-500 hover:text-red-600 transition-colors p-1.5 rounded-lg hover:bg-red-50">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
           </div>
-          <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between gap-2 text-xs">
+          <div class="pt-2 border-t border-slate-200 flex items-center justify-between gap-2 text-xs">
             <span class="text-slate-500">📅 ${p.date}</span>
             <div class="flex gap-2">
-              <button onclick="viewClient('${p.id}')" class="bg-slate-800 hover:bg-slate-750 text-slate-200 py-2 px-3 rounded-xl border border-slate-700 flex items-center gap-1.5 font-semibold transition-all">
+              <button onclick="viewClient('${p.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-3 rounded-xl border border-slate-300 flex items-center gap-1.5 font-semibold transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
                 Ver Portal
               </button>
-              <button onclick="copyLink('${p.id}')" class="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 hover:from-indigo-600 hover:to-purple-600 text-indigo-300 hover:text-white py-2 px-3 rounded-xl flex items-center gap-1.5 font-semibold transition-all">
+              <button onclick="copyLink('${p.id}')" class="bg-gradient-to-r from-blue-100 to-indigo-100 hover:from-blue-600 hover:to-indigo-600 text-blue-700 hover:text-white py-2 px-3 rounded-xl flex items-center gap-1.5 font-semibold transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                 </svg>
@@ -1292,7 +1316,7 @@
 
     function renderCurrentExpenseItems() {
       if (state.currentExpenseItems.length === 0) {
-        elements.expensesList.innerHTML = '<p class="text-[11px] text-slate-500 italic text-center py-4">No hay gastos añadidos aún</p>';
+        elements.expensesList.innerHTML = '<p class="text-xs sm:text-sm text-slate-600 italic text-center py-6">No hay gastos añadidos aún</p>';
         elements.expensesTotal.textContent = 'Total: $0.00';
         return;
       }
@@ -1301,19 +1325,19 @@
       elements.expensesTotal.textContent = `Total: $${total.toFixed(2)}`;
 
       elements.expensesList.innerHTML = state.currentExpenseItems.map((item, index) => `
-        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3">
-          <div class="flex items-center justify-between gap-2">
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-md">
+          <div class="flex items-start justify-between gap-3">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
-                <span class="text-base">${getExpenseTypeLabel(item.type).split(' ')[0]}</span>
-                <span class="text-sm font-semibold text-slate-200">${getExpenseTypeLabel(item.type).split(' ').slice(1).join(' ')}</span>
+                <span class="text-xl">${getExpenseTypeLabel(item.type).split(' ')[0]}</span>
+                <span class="text-base font-semibold text-slate-800">${getExpenseTypeLabel(item.type).split(' ').slice(1).join(' ')}</span>
               </div>
-              <p class="text-xs text-slate-500 mt-1 truncate">${item.description || 'Sin descripción'}</p>
+              <p class="text-sm text-slate-600 mt-2">${item.description || 'Sin descripción'}</p>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="text-sm font-bold text-emerald-400">$${item.amount.toFixed(2)}</span>
-              <button onclick="removeCurrentExpenseItem(${index})" class="text-slate-500 hover:text-red-400">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="flex flex-col items-end gap-2">
+              <span class="text-lg font-bold text-emerald-600">$${item.amount.toFixed(2)}</span>
+              <button onclick="removeCurrentExpenseItem(${index})" class="text-slate-500 hover:text-red-600 p-2 rounded-full hover:bg-red-50 active:bg-red-100">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -1426,23 +1450,23 @@
       elements.itemsContainer.classList.remove('hidden');
 
       elements.itemsContainer.innerHTML = state.expenseReports.map(report => `
-        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-md hover:shadow-xl hover:shadow-emerald-100/50 transition-all">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
-              <p class="text-sm font-semibold text-slate-200">📊 Reporte de Gastos</p>
-              <p class="text-lg font-bold text-emerald-400">$${report.total.toFixed(2)}</p>
-              <p class="text-xs text-slate-500">${report.items.length} gasto(s)</p>
+              <p class="text-base font-semibold text-slate-800">📊 Reporte de Gastos</p>
+              <p class="text-2xl font-bold text-emerald-600">$${report.total.toFixed(2)}</p>
+              <p class="text-sm text-slate-600 mt-1">${report.items.length} gasto(s)</p>
             </div>
-            <button onclick="deleteExpenseReport('${report.id}')" class="text-slate-600 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-950/30">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button onclick="deleteExpenseReport('${report.id}')" class="text-slate-500 hover:text-red-600 transition-colors p-2.5 rounded-lg hover:bg-red-50 active:bg-red-100">
+              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
           </div>
-          <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between gap-2 text-xs">
-            <span class="text-slate-500">📅 ${new Date(report.date).toLocaleDateString()}</span>
-            <button onclick="viewExpenseReport('${report.id}')" class="bg-slate-800 hover:bg-slate-750 text-slate-200 py-2 px-3 rounded-xl border border-slate-700 flex items-center gap-1.5 font-semibold transition-all">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div class="pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-sm">
+            <span class="text-slate-600">📅 ${new Date(report.date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <button onclick="viewExpenseReport('${report.id}')" class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-3 px-5 rounded-xl flex items-center justify-center gap-2 font-semibold transition-all active:scale-[0.98] shadow-lg shadow-blue-500/30">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
@@ -1473,10 +1497,10 @@
       state.activeTab = tab;
       
       if (tab === 'technical') {
-        elements.tabTechnical.classList.remove('bg-slate-800', 'text-slate-300', 'hover:bg-slate-700');
-        elements.tabTechnical.classList.add('bg-gradient-to-r', 'from-indigo-500', 'to-purple-500', 'text-white', 'shadow-lg');
-        elements.tabExpenses.classList.add('bg-slate-800', 'text-slate-300', 'hover:bg-slate-700');
-        elements.tabExpenses.classList.remove('bg-gradient-to-r', 'from-indigo-500', 'to-purple-500', 'text-white', 'shadow-lg');
+        elements.tabTechnical.classList.remove('bg-slate-100', 'text-slate-700', 'hover:bg-slate-200');
+        elements.tabTechnical.classList.add('bg-gradient-to-r', 'from-blue-500', 'to-indigo-600', 'text-white', 'shadow-lg', 'shadow-blue-500/30');
+        elements.tabExpenses.classList.add('bg-slate-100', 'text-slate-700', 'hover:bg-slate-200');
+        elements.tabExpenses.classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-indigo-600', 'text-white', 'shadow-lg', 'shadow-blue-500/30');
         elements.sectionTechnical.classList.remove('hidden');
         elements.sectionExpenses.classList.add('hidden');
         elements.listTitle.textContent = '📁 Historial de Informes Registrados';
@@ -1484,10 +1508,10 @@
         elements.noItemsText.textContent = 'No tienes carpetas de trabajos guardadas';
         renderItems();
       } else {
-        elements.tabExpenses.classList.remove('bg-slate-800', 'text-slate-300', 'hover:bg-slate-700');
-        elements.tabExpenses.classList.add('bg-gradient-to-r', 'from-indigo-500', 'to-purple-500', 'text-white', 'shadow-lg');
-        elements.tabTechnical.classList.add('bg-slate-800', 'text-slate-300', 'hover:bg-slate-700');
-        elements.tabTechnical.classList.remove('bg-gradient-to-r', 'from-indigo-500', 'to-purple-500', 'text-white', 'shadow-lg');
+        elements.tabExpenses.classList.remove('bg-slate-100', 'text-slate-700', 'hover:bg-slate-200');
+        elements.tabExpenses.classList.add('bg-gradient-to-r', 'from-blue-500', 'to-indigo-600', 'text-white', 'shadow-lg', 'shadow-blue-500/30');
+        elements.tabTechnical.classList.add('bg-slate-100', 'text-slate-700', 'hover:bg-slate-200');
+        elements.tabTechnical.classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-indigo-600', 'text-white', 'shadow-lg', 'shadow-blue-500/30');
         elements.sectionExpenses.classList.remove('hidden');
         elements.sectionTechnical.classList.add('hidden');
         elements.listTitle.textContent = '💰 Historial de Gastos Registrados';
