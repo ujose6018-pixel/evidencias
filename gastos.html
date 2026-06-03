@@ -10,6 +10,8 @@
   <title>Gastos - Workspace</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jscanify@1.2.0/dist/jscanify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     @keyframes pulse {
       0%, 100% { opacity: 1; }
@@ -110,8 +112,14 @@
       <h3 class="text-white font-bold text-lg">Ajustar Escaneo</h3>
       <div class="w-12"></div>
     </div>
-    <div class="relative flex-1 flex items-center justify-center bg-slate-800 overflow-hidden p-4">
-      <canvas id="preview-canvas" class="max-w-full max-h-full rounded-xl shadow-2xl"></canvas>
+    <div class="relative flex-1 flex flex-col items-center justify-center bg-slate-800 overflow-hidden p-4 gap-4">
+      <canvas id="preview-canvas" class="max-w-full max-h-[60%] rounded-xl shadow-2xl"></canvas>
+      <div id="ocr-progress" class="text-white text-center hidden w-full max-w-md">
+        <div class="w-full bg-slate-700 rounded-full h-2 overflow-hidden mb-2">
+          <div id="ocr-progress-bar" class="bg-emerald-500 h-full w-0 transition-all duration-300"></div>
+        </div>
+        <p id="ocr-status-text" class="text-sm text-slate-300">Procesando OCR...</p>
+      </div>
     </div>
     <div class="bg-slate-900/95 backdrop-blur-md p-6 border-t border-slate-800">
       <div class="flex items-center justify-between mb-4">
@@ -120,7 +128,9 @@
           <button id="preview-btn-gray" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-400 text-sm font-semibold border border-slate-800 hover:text-white">Gris</button>
           <button id="preview-btn-bw" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-400 text-sm font-semibold border border-slate-800 hover:text-white">B/N</button>
         </div>
-        <button id="preview-btn-enhance" class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-violet-600 text-white text-sm font-semibold">Mejorar</button>
+        <button id="preview-btn-ocr" class="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold flex items-center gap-2">
+          🔍 Extraer Texto OCR
+        </button>
       </div>
       <div class="flex items-center justify-center gap-4">
         <button id="preview-btn-save" class="flex-1 py-4 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white active:scale-[0.98]">
@@ -499,6 +509,10 @@
       previewBtnGray: document.getElementById('preview-btn-gray'),
       previewBtnBw: document.getElementById('preview-btn-bw'),
       previewBtnEnhance: document.getElementById('preview-btn-enhance'),
+      previewBtnOcr: document.getElementById('preview-btn-ocr'),
+      ocrProgress: document.getElementById('ocr-progress'),
+      ocrProgressBar: document.getElementById('ocr-progress-bar'),
+      ocrStatusText: document.getElementById('ocr-status-text'),
       previewBtnSave: document.getElementById('preview-btn-save'),
       previewCanvas: document.getElementById('preview-canvas'),
       year: document.getElementById('year'),
@@ -1089,11 +1103,25 @@
       canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      // Copy to preview canvas
-      const previewCtx = elements.previewCanvas.getContext('2d');
-      elements.previewCanvas.width = canvas.width;
-      elements.previewCanvas.height = canvas.height;
-      previewCtx.drawImage(canvas, 0, 0);
+      // Usar jscanify para detectar y enderezar el documento
+      try {
+        const scanner = new jscanify();
+        // Extraer papel y enderezarlo a 500x700px (tamaño A4 aproximado en píxeles)
+        const resultadoCanvas = scanner.extractPaper(canvas, 500, 700);
+        
+        // Mostrar resultado en el canvas de vista previa
+        const previewCtx = elements.previewCanvas.getContext('2d');
+        elements.previewCanvas.width = 500;
+        elements.previewCanvas.height = 700;
+        previewCtx.drawImage(resultadoCanvas, 0, 0);
+      } catch (error) {
+        // Si no se detecta papel, mostrar la imagen normal
+        addLog('Scanner', 'No se detectó documento automáticamente, usando imagen normal', 'INFO');
+        const previewCtx = elements.previewCanvas.getContext('2d');
+        elements.previewCanvas.width = canvas.width;
+        elements.previewCanvas.height = canvas.height;
+        previewCtx.drawImage(canvas, 0, 0);
+      }
       
       elements.scannerModal.classList.add('hidden');
       elements.scannerPreviewModal.classList.remove('hidden');
@@ -1111,6 +1139,73 @@
       if (state.scannerStream) {
         state.scannerStream.getTracks().forEach(track => track.stop());
         state.scannerStream = null;
+      }
+    }
+
+    async function performOCR() {
+      try {
+        // Mostrar indicador de progreso
+        elements.previewBtnOcr.disabled = true;
+        elements.previewBtnOcr.innerHTML = '<svg class="w-4 h-4 animate-spin-custom inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Procesando...';
+        elements.ocrProgress.classList.remove('hidden');
+        elements.ocrProgressBar.style.width = '0%';
+        elements.ocrStatusText.textContent = 'Inicializando OCR...';
+        
+        // Convertir canvas a imagen para Tesseract
+        const imageData = elements.previewCanvas.toDataURL('image/jpeg', 0.95);
+        
+        // Ejecutar Tesseract en español
+        const result = await Tesseract.recognize(imageData, 'spa+eng', {
+          logger: (m) => {
+            if (m.status === 'recognizing text') {
+              const progress = Math.round(m.progress * 100);
+              elements.ocrProgressBar.style.width = `${progress}%`;
+              elements.ocrStatusText.textContent = `Reconociendo texto... ${progress}%`;
+            } else {
+              elements.ocrStatusText.textContent = m.status;
+            }
+          }
+        });
+        
+        const extractedText = result.data.text;
+        addLog('OCR', 'Texto extraído correctamente', 'SUCCESS');
+        
+        // Autocompletar campos inteligente
+        const textLower = extractedText.toLowerCase();
+        
+        // Buscar monto (patrones como $123.45, 123,45€, etc.)
+        const amountMatch = extractedText.match(/[\$€]?\s*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))|\b(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))\s*[\$€]?/);
+        if (amountMatch) {
+          let amountStr = amountMatch[0].replace(/[\$€\s]/g, '').replace(',', '.');
+          if (!isNaN(parseFloat(amountStr))) {
+            elements.expenseItemAmount.value = parseFloat(amountStr).toFixed(2);
+            addLog('OCR', `Monto detectado: ${amountStr}`, 'INFO');
+          }
+        }
+        
+        // Buscar fecha (DD/MM/AAAA, MM/DD/AAAA, etc.)
+        const dateMatch = extractedText.match(/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/);
+        if (dateMatch) {
+          let dateStr = dateMatch[0];
+          addLog('OCR', `Fecha detectada: ${dateStr}`, 'INFO');
+        }
+        
+        // Llenar descripción con el texto extraído
+        elements.expenseItemDescription.value = extractedText.substring(0, 500);
+        
+        showToast('✅ Texto extraído correctamente!', 'success');
+        
+        // Cerrar modal de vista previa y abrir formulario de gasto
+        saveScannerImage();
+        
+      } catch (error) {
+        console.error('Error OCR:', error);
+        showToast('Error al extraer texto, intenta de nuevo', 'error');
+        addLog('OCR', `Error: ${error.message}`, 'ERROR');
+      } finally {
+        elements.previewBtnOcr.disabled = false;
+        elements.previewBtnOcr.innerHTML = '🔍 Extraer Texto OCR';
+        elements.ocrProgress.classList.add('hidden');
       }
     }
 
@@ -1315,10 +1410,28 @@
           reader.onload = (event) => {
             const img = new Image();
             img.onload = () => {
-              const ctx = elements.previewCanvas.getContext('2d');
-              elements.previewCanvas.width = img.width;
-              elements.previewCanvas.height = img.height;
-              ctx.drawImage(img, 0, 0);
+              // Crear canvas temporal para la imagen original
+              const tempCanvas = document.createElement('canvas');
+              tempCanvas.width = img.width;
+              tempCanvas.height = img.height;
+              const tempCtx = tempCanvas.getContext('2d');
+              tempCtx.drawImage(img, 0, 0);
+              
+              try {
+                const scanner = new jscanify();
+                const resultadoCanvas = scanner.extractPaper(tempCanvas, 500, 700);
+                const previewCtx = elements.previewCanvas.getContext('2d');
+                elements.previewCanvas.width = 500;
+                elements.previewCanvas.height = 700;
+                previewCtx.drawImage(resultadoCanvas, 0, 0);
+              } catch (error) {
+                addLog('Scanner', 'No se detectó documento automáticamente en la imagen, usando imagen normal', 'INFO');
+                const previewCtx = elements.previewCanvas.getContext('2d');
+                elements.previewCanvas.width = img.width;
+                elements.previewCanvas.height = img.height;
+                previewCtx.drawImage(img, 0, 0);
+              }
+              
               elements.scannerPreviewModal.classList.remove('hidden');
             };
             img.src = event.target.result;
@@ -1332,6 +1445,7 @@
           elements.scannerModal.classList.remove('hidden');
         }
       });
+      elements.previewBtnOcr.addEventListener('click', performOCR);
       elements.previewBtnSave.addEventListener('click', saveScannerImage);
       
       const urlParams = new URLSearchParams(window.location.search);
