@@ -629,31 +629,54 @@
       }
     }
 
+    // Variable para guardar el ID del reporte a cargar desde el link
+    let pendingReportId = null;
+    
     async function autoConnectSupabase() {
       addLog('Supabase', 'Conectando automáticamente...', 'INFO');
-      try {
-        appSupabase = window.supabase.createClient(state.supabaseUrl, state.supabaseKey);
-        const { data, error } = await appSupabase.from('expense_reports').select('count', { count: 'exact', head: true });
-        if (error) {
-          if (error.message.includes('relation') && error.message.includes('does not exist')) {
-            updateConnectionStatus('missing-table', 'Falta la tabla "expense_reports" - ve a SQL Editor en Supabase');
-            addLog('Supabase', 'ERROR: Falta crear la tabla "expense_reports"', 'ERROR');
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      async function tryConnect() {
+        try {
+          appSupabase = window.supabase.createClient(state.supabaseUrl, state.supabaseKey);
+          const { data, error } = await appSupabase.from('expense_reports').select('count', { count: 'exact', head: true });
+          if (error) {
+            if (error.message.includes('relation') && error.message.includes('does not exist')) {
+              updateConnectionStatus('missing-table', 'Falta la tabla "expense_reports" - ve a SQL Editor en Supabase');
+              addLog('Supabase', 'ERROR: Falta crear la tabla "expense_reports"', 'ERROR');
+            } else {
+              updateConnectionStatus('disconnected', error.message);
+              addLog('Supabase', `Error: ${error.message}`, 'ERROR');
+            }
+            // Mostrar panel de configuración si hay error
+            elements.realModeConfig.classList.remove('hidden');
+          } else {
+            updateConnectionStatus('connected');
+            addLog('Supabase', '¡Conectado exitosamente!', 'SUCCESS');
+            await loadExpenseReports();
+            
+            // Si teníamos un ID pendiente desde el link, lo cargamos ahora
+            if (pendingReportId) {
+              addLog('Cliente View', `Cargando reporte pendiente: ${pendingReportId}`, 'INFO');
+              window.viewExpenseReport(pendingReportId);
+              pendingReportId = null;
+            }
+          }
+        } catch (error) {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            addLog('Supabase', `Reintentando conexión (${retryCount}/${maxRetries})...`, 'INFO');
+            setTimeout(tryConnect, 1500);
           } else {
             updateConnectionStatus('disconnected', error.message);
-            addLog('Supabase', `Error: ${error.message}`, 'ERROR');
+            addLog('Supabase', `Error de conexión: ${error.message}`, 'ERROR');
+            elements.realModeConfig.classList.remove('hidden');
           }
-          // Mostrar panel de configuración si hay error
-          elements.realModeConfig.classList.remove('hidden');
-        } else {
-          updateConnectionStatus('connected');
-          addLog('Supabase', '¡Conectado exitosamente!', 'SUCCESS');
-          loadExpenseReports();
         }
-      } catch (error) {
-        updateConnectionStatus('disconnected', error.message);
-        addLog('Supabase', `Error de conexión: ${error.message}`, 'ERROR');
-        elements.realModeConfig.classList.remove('hidden');
       }
+      
+      await tryConnect();
     }
 
     async function loadExpenseReports() {
@@ -1292,10 +1315,10 @@
             const fileExt = (item.receiptFilename || 'image.jpg').split('.').pop() || 'jpg';
             const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
             
-            const { data, error } = await appSupabase.storage.from('expense-receipts').upload(fileName, Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)), { contentType: item.receipt.split(';')[0].split(':')[1], cacheControl: '3600', upsert: false });
+            const { data, error } = await appSupabase.storage.from('project-photos').upload(fileName, Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)), { contentType: item.receipt.split(';')[0].split(':')[1], cacheControl: '3600', upsert: false });
             if (error) throw error;
             
-            const { data: { publicUrl } } = appSupabase.storage.from('expense-receipts').getPublicUrl(data.path);
+            const { data: { publicUrl } } = appSupabase.storage.from('project-photos').getPublicUrl(data.path);
             
             return { ...item, receiptUrl: publicUrl, receipt: null };
           }
@@ -1453,10 +1476,12 @@
       const accion = urlParams.get('accion');
       
       if (reporteId) {
+        // Guardamos el ID como pendiente hasta que Supabase esté conectado
+        pendingReportId = reporteId;
         state.selectedReportId = reporteId;
         state.activeView = 'client';
-        showClientView();
-        loadExpenseReportDetail(reporteId);
+        showClientView(); // Mostramos la vista cliente inmediatamente (estado de carga)
+        addLog('Cliente View', `ID de reporte detectado en el link: ${reporteId} - esperando conexión a Supabase...`, 'INFO');
       } else if (accion === 'historial') {
         toggleView();
       }

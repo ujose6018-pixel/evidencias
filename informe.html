@@ -605,31 +605,54 @@
       }
     }
 
+    // Variable para guardar el ID del proyecto a cargar desde el link
+    let pendingProjectId = null;
+    
     async function autoConnectSupabase() {
       addLog('Supabase', 'Conectando automáticamente...', 'INFO');
-      try {
-        appSupabase = window.supabase.createClient(state.supabaseUrl, state.supabaseKey);
-        const { data, error } = await appSupabase.from('projects').select('count', { count: 'exact', head: true });
-        if (error) {
-          if (error.message.includes('relation') && error.message.includes('does not exist')) {
-            updateConnectionStatus('missing-table', 'Falta la tabla "projects" - ve a SQL Editor en Supabase');
-            addLog('Supabase', 'ERROR: Falta crear la tabla "projects"', 'ERROR');
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      async function tryConnect() {
+        try {
+          appSupabase = window.supabase.createClient(state.supabaseUrl, state.supabaseKey);
+          const { data, error } = await appSupabase.from('projects').select('count', { count: 'exact', head: true });
+          if (error) {
+            if (error.message.includes('relation') && error.message.includes('does not exist')) {
+              updateConnectionStatus('missing-table', 'Falta la tabla "projects" - ve a SQL Editor en Supabase');
+              addLog('Supabase', 'ERROR: Falta crear la tabla "projects"', 'ERROR');
+            } else {
+              updateConnectionStatus('disconnected', error.message);
+              addLog('Supabase', `Error: ${error.message}`, 'ERROR');
+            }
+            // Mostrar panel de configuración si hay error
+            elements.realModeConfig.classList.remove('hidden');
+          } else {
+            updateConnectionStatus('connected');
+            addLog('Supabase', '¡Conectado exitosamente!', 'SUCCESS');
+            await loadProjects();
+            
+            // Si teníamos un ID pendiente desde el link, lo cargamos ahora
+            if (pendingProjectId) {
+              addLog('Cliente View', `Cargando proyecto pendiente: ${pendingProjectId}`, 'INFO');
+              window.viewClient(pendingProjectId);
+              pendingProjectId = null;
+            }
+          }
+        } catch (error) {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            addLog('Supabase', `Reintentando conexión (${retryCount}/${maxRetries})...`, 'INFO');
+            setTimeout(tryConnect, 1500);
           } else {
             updateConnectionStatus('disconnected', error.message);
-            addLog('Supabase', `Error: ${error.message}`, 'ERROR');
+            addLog('Supabase', `Error de conexión: ${error.message}`, 'ERROR');
+            elements.realModeConfig.classList.remove('hidden');
           }
-          // Mostrar panel de configuración si hay error
-          elements.realModeConfig.classList.remove('hidden');
-        } else {
-          updateConnectionStatus('connected');
-          addLog('Supabase', '¡Conectado exitosamente!', 'SUCCESS');
-          loadProjects();
         }
-      } catch (error) {
-        updateConnectionStatus('disconnected', error.message);
-        addLog('Supabase', `Error de conexión: ${error.message}`, 'ERROR');
-        elements.realModeConfig.classList.remove('hidden');
       }
+      
+      await tryConnect();
     }
 
     async function loadProjects() {
@@ -1244,11 +1267,14 @@
       const urlParams = new URLSearchParams(window.location.search);
       const proyectoId = urlParams.get('proyectoId');
       const accion = urlParams.get('accion');
+      
       if (proyectoId) {
+        // Guardamos el ID como pendiente hasta que Supabase esté conectado
+        pendingProjectId = proyectoId;
         state.selectedProjectId = proyectoId;
         state.activeView = 'client';
-        showClientView();
-        loadClientProject(proyectoId);
+        showClientView(); // Mostramos la vista cliente inmediatamente (estado de carga)
+        addLog('Cliente View', `ID de proyecto detectado en el link: ${proyectoId} - esperando conexión a Supabase...`, 'INFO');
       } else if (accion === 'historial') {
         toggleView();
       }
