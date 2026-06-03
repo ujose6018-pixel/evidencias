@@ -133,7 +133,7 @@
   <div id="expense-item-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white border border-slate-200 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-lg sm:max-w-md shadow-2xl shadow-slate-900/30 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-6">
-        <h3 class="text-base sm:text-sm font-bold text-slate-800">Añadir Gasto</h3>
+        <h3 id="expense-item-modal-title" class="text-base sm:text-sm font-bold text-slate-800">Añadir Gasto</h3>
         <button id="btn-close-expense-modal" type="button" class="text-slate-500 hover:text-slate-800 p-2 -mr-2 rounded-full hover:bg-slate-100 active:bg-slate-200">
           <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
@@ -165,24 +165,24 @@
         </div>
         <div class="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50">
           <div class="bg-white px-4 py-4 border-b border-slate-200 flex items-center justify-between">
-            <span class="text-xs sm:text-sm font-bold text-slate-700">Foto de Factura</span>
+            <span class="text-xs sm:text-sm font-bold text-slate-700">Factura (Imágenes, Documentos)</span>
             <div class="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs">
               <button id="expense-item-btn-device" type="button" class="flex-1 px-4 py-2 rounded-lg font-semibold transition bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg shadow-purple-500/20">
-                📁 Galería
+                📁 Archivos
               </button>
               <button id="expense-item-btn-camera" type="button" class="flex-1 px-4 py-2 rounded-lg font-semibold transition text-slate-500">
-                📷 Cámara
+                📷 Escáner
               </button>
             </div>
           </div>
           <div class="p-5">
             <div id="expense-item-device-area" class="space-y-4">
               <div id="expense-item-file-drop" class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-purple-500 hover:bg-purple-50 active:border-purple-400 active:bg-purple-100">
-                <input id="expense-item-file-input" type="file" accept="image/*" class="hidden" />
+                <input id="expense-item-file-input" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" class="hidden" />
                 <svg class="w-10 h-10 mx-auto text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
-                <p class="mt-3 text-sm font-semibold text-slate-700">Toca para subir foto</p>
+                <p class="mt-3 text-sm font-semibold text-slate-700">Toca para seleccionar archivo</p>
               </div>
             </div>
             <div id="expense-item-camera-area" class="space-y-4 hidden">
@@ -200,7 +200,7 @@
           </div>
           <div id="expense-item-preview-container" class="px-5 pb-5 hidden">
             <div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-slate-300 bg-slate-50">
-              <img id="expense-item-preview-img" class="w-full h-full object-contain" src="" alt="Factura" />
+              <div id="expense-item-preview-content"></div>
               <button id="expense-item-btn-remove" type="button" class="absolute top-3 right-3 bg-red-500 hover:bg-red-600 text-white p-2.5 rounded-full active:scale-[0.95] shadow-lg shadow-red-500/30">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
@@ -215,7 +215,7 @@
           Cancelar
         </button>
         <button id="btn-confirm-expense-item" type="button" class="flex-1 py-4 rounded-xl font-bold text-base sm:text-sm bg-gradient-to-r from-purple-500 to-violet-600 text-white active:scale-[0.98] shadow-lg shadow-purple-500/30">
-          Añadir
+          <span id="expense-item-confirm-text">Añadir</span>
         </button>
       </div>
     </div>
@@ -254,7 +254,7 @@
         <div id="connection-status" class="bg-white border border-slate-200 p-5 rounded-3xl shadow-xl shadow-slate-200/50">
           <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-3">
-              <div id="connection-indicator" class="w-4 h-4 rounded-full bg-slate-400"></div>
+              <div id="connection-indicator" class="w-3 h-3 rounded-full bg-slate-400"></div>
               <div>
                 <span id="connection-status-text" class="text-base font-semibold text-slate-700">Conectando...</span>
                 <p id="connection-error" class="text-sm text-slate-500 mt-1">Verificando conexión con Supabase</p>
@@ -293,7 +293,7 @@
         </div>
 
         <div id="section-expenses" class="bg-white backdrop-blur-xl border border-slate-200 rounded-3xl p-7 shadow-xl shadow-slate-200/50 space-y-5">
-          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2" id="form-title">
             💰 Nuevo Reporte de Gastos
           </h2>
           <div class="text-sm">
@@ -312,9 +312,14 @@
           <button id="btn-add-expense-item" type="button" class="w-full py-4 sm:py-3 rounded-2xl font-bold text-base sm:text-sm transition-all flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-dashed border-slate-300 active:scale-[0.98]">
             <span class="text-2xl sm:text-xl">+</span> Añadir Gasto
           </button>
-          <button id="btn-save-expense-report" class="w-full py-4 sm:py-3.5 rounded-2xl font-bold text-base sm:text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white active:scale-[0.98]">
-            💾 Guardar Reporte Completo
-          </button>
+          <div class="flex gap-3">
+            <button id="btn-cancel-edit" class="flex-1 py-3.5 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-700 hidden">
+              ❌ Cancelar Edición
+            </button>
+            <button id="btn-save-expense-report" class="flex-1 py-3.5 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white active:scale-[0.98]">
+              💾 Guardar Reporte Completo
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -329,7 +334,7 @@
         </div>
         <div id="no-items" class="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-500">
           <svg class="w-12 h-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2 2V9z" />
           </svg>
           <p class="text-lg font-semibold mt-4 text-slate-700">No hay reportes de gastos</p>
           <p class="text-sm text-slate-500 max-w-[200px] mt-2">Crea tu primer reporte de gastos</p>
@@ -358,7 +363,7 @@
           </div>
           <div id="expense-report-meta" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-5 border-t border-slate-200 text-sm hidden">
             <div class="flex items-center gap-2 text-slate-700">
-              <span>Fecha:</span>
+              <span>Fecha del Reporte:</span>
               <strong id="expense-report-date-text" class="text-slate-800"></strong>
             </div>
             <div class="flex items-center gap-2 text-slate-700 sm:justify-end">
@@ -407,10 +412,20 @@
 
   <script>
     let appSupabase = null;
+    // Generar o recuperar ID de usuario
+    const USER_ID_KEY = 'workspace_user_id';
+    let userId = localStorage.getItem(USER_ID_KEY);
+    if (!userId) {
+      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem(USER_ID_KEY, userId);
+    }
+
     const state = {
       activeView: 'create',
       expenseReports: [],
       selectedReportId: null,
+      editingReportId: null,
+      editingExpenseIndex: null,
       supabaseUrl: localStorage.getItem('supabase_url') || 'https://snqfoqslgxelisezeqqc.supabase.co',
       supabaseKey: localStorage.getItem('supabase_key') || 'sb_publishable_-YUywAvjOPQ23akv61M-5g_ERpDvyS_',
       currentExpenseItems: [],
@@ -459,11 +474,15 @@
       expenseItemFileDrop: document.getElementById('expense-item-file-drop'),
       expenseItemFileInput: document.getElementById('expense-item-file-input'),
       expenseItemPreviewContainer: document.getElementById('expense-item-preview-container'),
-      expenseItemPreviewImg: document.getElementById('expense-item-preview-img'),
+      expenseItemPreviewContent: document.getElementById('expense-item-preview-content'),
       expenseItemBtnRemove: document.getElementById('expense-item-btn-remove'),
       btnCancelExpenseItem: document.getElementById('btn-cancel-expense-item'),
       btnConfirmExpenseItem: document.getElementById('btn-confirm-expense-item'),
       btnSaveExpenseReport: document.getElementById('btn-save-expense-report'),
+      btnCancelEdit: document.getElementById('btn-cancel-edit'),
+      formTitle: document.getElementById('form-title'),
+      expenseItemModalTitle: document.getElementById('expense-item-modal-title'),
+      expenseItemConfirmText: document.getElementById('expense-item-confirm-text'),
       expenseItemBtnStartScanner: document.getElementById('expense-item-btn-start-scanner'),
       scannerModal: document.getElementById('scanner-modal'),
       scannerBtnClose: document.getElementById('scanner-btn-close'),
@@ -495,6 +514,37 @@
       expenseReportItems: document.getElementById('expense-report-items'),
       expenseReportNotFound: document.getElementById('expense-report-not-found')
     };
+
+    const getExpenseTypeLabel = (type) => {
+      const labels = {
+        'comida': '🍔 Comida',
+        'transporte': '🚗 Transporte',
+        'alojamiento': '🏨 Alojamiento',
+        'combustible': '⛽ Combustible',
+        'peajes': '🛣️ Peajes',
+        'materiales': '🔧 Materiales',
+        'servicios': '📞 Servicios',
+        'otros': '📦 Otros'
+      };
+      return labels[type] || type;
+    };
+
+    function getFileIcon(filename) {
+      const ext = filename.split('.').pop().toLowerCase();
+      const icons = {
+        pdf: '📄',
+        doc: '📝', docx: '📝',
+        xls: '📊', xlsx: '📊',
+        jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️', webp: '🖼️',
+        default: '📁'
+      };
+      return icons[ext] || icons.default;
+    }
+
+    function isImageFile(filename) {
+      const ext = filename.split('.').pop().toLowerCase();
+      return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext);
+    }
 
     function addLog(service, detail, type = 'INFO') {
       const timestamp = new Date().toLocaleTimeString();
@@ -538,6 +588,7 @@
       const indicator = elements.connectionIndicator;
       const statusText = elements.connectionStatusText;
       const errorText = elements.connectionError;
+      
       switch(status) {
         case 'connected':
           indicator.className = 'w-3 h-3 rounded-full bg-green-500 animate-pulse-custom shadow-lg shadow-green-500/40';
@@ -605,42 +656,6 @@
       }
     }
 
-    const getExpenseTypeLabel = (type) => {
-      const labels = {
-        'comida': '🍔 Comida',
-        'transporte': '🚗 Transporte',
-        'alojamiento': '🏨 Alojamiento',
-        'combustible': '⛽ Combustible',
-        'peajes': '🛣️ Peajes',
-        'materiales': '🔧 Materiales',
-        'servicios': '📞 Servicios',
-        'otros': '📦 Otros'
-      };
-      return labels[type] || type;
-    };
-
-    function openExpenseItemModal() {
-      state.currentExpenseItem = {
-        id: 'temp-' + Date.now(),
-        type: '',
-        amount: 0,
-        description: '',
-        receipt: null
-      };
-      state.expenseItemImage = null;
-      elements.expenseItemType.value = '';
-      elements.expenseItemAmount.value = '';
-      elements.expenseItemDescription.value = '';
-      elements.expenseItemPreviewContainer.classList.add('hidden');
-      elements.expenseItemDeviceArea.classList.remove('hidden');
-      elements.expenseItemCameraArea.classList.add('hidden');
-      elements.expenseItemModal.classList.remove('hidden');
-    }
-
-    function closeExpenseItemModal() {
-      elements.expenseItemModal.classList.add('hidden');
-    }
-
     function renderCurrentExpenseItems() {
       if (state.currentExpenseItems.length === 0) {
         elements.expensesList.innerHTML = '<p class="text-xs sm:text-sm text-slate-600 italic text-center py-8">No hay gastos añadidos aún</p>';
@@ -649,6 +664,7 @@
       }
       const total = state.currentExpenseItems.reduce((sum, item) => sum + item.amount, 0);
       elements.expensesTotal.textContent = `Total: $${total.toFixed(2)}`;
+
       elements.expensesList.innerHTML = state.currentExpenseItems.map((item, index) => `
         <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-md">
           <div class="flex items-start justify-between gap-3">
@@ -661,13 +677,32 @@
             </div>
             <div class="flex flex-col items-end gap-2">
               <span class="text-lg font-bold text-emerald-600">$${item.amount.toFixed(2)}</span>
-              <button onclick="removeCurrentExpenseItem(${index})" class="text-slate-500 hover:text-red-600 p-2 rounded-full hover:bg-red-50 active:bg-red-100">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              <div class="flex gap-1">
+                <button onclick="editExpenseItem(${index})" class="text-slate-500 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 active:bg-purple-100">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button onclick="removeCurrentExpenseItem(${index})" class="text-slate-500 hover:text-red-600 p-1 rounded-full hover:bg-red-50 active:bg-red-100">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
+          ${item.receiptUrl || item.receipt ? `
+            <div class="mt-3">
+              ${isImageFile(item.receiptFilename || item.receiptUrl || 'image.jpg') 
+                ? `<img src="${item.receiptUrl || item.receipt}" alt="Factura" class="w-full max-h-40 object-contain rounded-lg border border-slate-300 cursor-pointer" onclick="openLightbox('${item.receiptUrl || item.receipt}')" />`
+                : `<div class="flex items-center gap-3 p-3 bg-slate-100 rounded-lg border border-slate-300">
+                    <span class="text-2xl">${getFileIcon(item.receiptFilename || item.receiptUrl || 'file')}</span>
+                    <span class="text-sm text-slate-700 truncate flex-1">${item.receiptFilename || 'Factura adjunta'}</span>
+                    <a href="${item.receiptUrl || item.receipt}" class="text-xs font-semibold text-purple-600 hover:text-purple-800" download="${item.receiptFilename || 'factura'}">Descargar</a>
+                  </div>`
+              }
+            </div>
+          ` : ''}
         </div>
       `).join('');
     }
@@ -677,98 +712,6 @@
       renderCurrentExpenseItems();
     };
 
-    function confirmExpenseItem() {
-      const type = elements.expenseItemType.value;
-      const amount = parseFloat(elements.expenseItemAmount.value);
-      const description = elements.expenseItemDescription.value;
-      if (!type || !amount || isNaN(amount)) {
-        showToast('Por favor completa tipo y monto', 'error');
-        return;
-      }
-      state.currentExpenseItem.type = type;
-      state.currentExpenseItem.amount = amount;
-      state.currentExpenseItem.description = description;
-      state.currentExpenseItem.id = 'item-' + Date.now();
-      if (state.expenseItemImage) {
-        state.currentExpenseItem.receipt = state.expenseItemImage;
-      }
-      state.currentExpenseItems.push({ ...state.currentExpenseItem });
-      renderCurrentExpenseItems();
-      closeExpenseItemModal();
-    }
-
-    function handleExpenseItemFileSelected(file) {
-      if (!file.type.startsWith('image/')) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        state.expenseItemImage = e.target.result;
-        state.currentExpenseItem.receipt = e.target.result;
-        elements.expenseItemPreviewImg.src = e.target.result;
-        elements.expenseItemPreviewContainer.classList.remove('hidden');
-        elements.expenseItemDeviceArea.classList.add('hidden');
-        elements.expenseItemCameraArea.classList.add('hidden');
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function removeExpenseItemImage() {
-      state.expenseItemImage = null;
-      state.currentExpenseItem.receipt = null;
-      elements.expenseItemPreviewContainer.classList.add('hidden');
-      elements.expenseItemDeviceArea.classList.remove('hidden');
-    }
-
-    async function saveExpenseReport() {
-      const date = elements.expenseReportDate.value;
-      if (!date) {
-        showToast('Por favor selecciona la fecha del reporte', 'error');
-        return;
-      }
-      if (state.currentExpenseItems.length === 0) {
-        showToast('Por favor añade al menos un gasto', 'error');
-        return;
-      }
-      if (state.isSaving) return;
-      state.isSaving = true;
-      elements.btnSaveExpenseReport.disabled = true;
-      elements.btnSaveExpenseReport.innerHTML = '<svg class="w-5 h-5 animate-spin-custom" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> Guardando...';
-      addLog('Expenses', 'Iniciando guardado de reporte...', 'INFO');
-      try {
-        const itemsWithReceipts = await Promise.all(state.currentExpenseItems.map(async (item) => {
-          if (!item.receipt) return item;
-          const base64Data = item.receipt.split(',')[1];
-          const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
-          const { data, error } = await appSupabase.storage.from('expense-receipts').upload(fileName, Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)), { contentType: 'image/jpeg', cacheControl: '3600', upsert: false });
-          if (error) throw error;
-          const { data: { publicUrl } } = appSupabase.storage.from('expense-receipts').getPublicUrl(data.path);
-          return { ...item, receiptUrl: publicUrl, receipt: null };
-        }));
-        const total = itemsWithReceipts.reduce((sum, item) => sum + item.amount, 0);
-        const { data: reportData, error: reportError } = await appSupabase.from('expense_reports').insert({
-          report_date: date,
-          items: itemsWithReceipts,
-          total: total,
-          created_at: new Date().toISOString()
-        }).select();
-        if (reportError) throw reportError;
-        const newReport = reportData[0];
-        state.expenseReports.unshift(newReport);
-        renderExpenseReports();
-        state.currentExpenseItems = [];
-        elements.expenseReportDate.value = new Date().toISOString().split('T')[0];
-        renderCurrentExpenseItems();
-        showToast('¡Reporte guardado exitosamente!', 'success');
-        addLog('Expenses', 'Reporte guardado exitosamente', 'SUCCESS');
-      } catch (error) {
-        showToast(`Error al guardar: ${error.message}`, 'error');
-        addLog('Expenses', `Error: ${error.message}`, 'ERROR');
-      } finally {
-        state.isSaving = false;
-        elements.btnSaveExpenseReport.disabled = false;
-        elements.btnSaveExpenseReport.innerHTML = '💾 Guardar Reporte Completo';
-      }
-    }
-
     function renderExpenseReports() {
       if (state.expenseReports.length === 0) {
         elements.noItems.classList.remove('hidden');
@@ -777,26 +720,36 @@
       }
       elements.noItems.classList.add('hidden');
       elements.itemsContainer.classList.remove('hidden');
-      elements.itemsContainer.innerHTML = state.expenseReports.map(report => `
-        <div class="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 hover:border-purple-300 transition-all hover:shadow-xl hover:shadow-purple-100/50">
-          <div class="flex justify-between items-start gap-3">
-            <div class="min-w-0">
-              <span class="text-[10px] text-purple-700 bg-gradient-to-r from-purple-100 to-violet-100 px-3 py-0.5 rounded-full font-semibold font-mono">Reporte de Gastos</span>
-              <h4 class="text-sm font-bold text-slate-800 mt-2">Fecha: ${new Date(report.report_date).toLocaleDateString('es-ES')}</h4>
-              <p class="text-xs text-slate-600 mt-1">${report.items.length} gastos</p>
+
+      elements.itemsContainer.innerHTML = state.expenseReports.map(report => {
+        const isOwner = report.created_by === userId;
+        const total = report.total || 0;
+        return `
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 hover:border-purple-300 transition-all hover:shadow-xl hover:shadow-purple-100/50">
+            <div class="flex justify-between items-start gap-3">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-purple-700 bg-gradient-to-r from-purple-100 to-violet-100 px-3 py-0.5 rounded-full font-semibold font-mono">
+                    ${isOwner ? '✏️ Tu reporte' : '📋 Reporte'}
+                  </span>
+                </div>
+                <h4 class="text-sm font-bold text-slate-800 mt-2 truncate">Fecha: ${new Date(report.report_date).toLocaleDateString('es-ES')}</h4>
+                <p class="text-xs text-slate-600 mt-1 truncate">${(report.items || []).length} gastos</p>
+              </div>
+              <div class="flex flex-col items-end gap-2">
+                <span class="text-lg font-bold text-emerald-600">$${total.toFixed(2)}</span>
+                ${isOwner ? `
+                  <button onclick="deleteExpenseReport('${report.id}')" class="text-slate-500 hover:text-red-600 transition-colors p-1.5 rounded-xl hover:bg-red-50">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                ` : ''}
+              </div>
             </div>
-            <div class="text-right">
-              <span class="text-lg font-bold text-emerald-600">$${report.total.toFixed(2)}</span>
-              <button onclick="deleteExpenseReport('${report.id}')" class="text-slate-500 hover:text-red-600 transition-colors p-1.5 rounded-xl hover:bg-red-50 block ml-auto">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div class="pt-2 border-t border-slate-200 flex items-center justify-between gap-2 text-xs">
-            <span class="text-slate-500">Creado: ${new Date(report.created_at).toLocaleDateString('es-ES')}</span>
-            <div class="flex gap-2">
+            <div class="pt-2 border-t border-slate-200 flex flex-wrap items-center gap-2 text-xs">
+              <span class="text-slate-500">Creado: ${new Date(report.created_at).toLocaleDateString('es-ES')}</span>
+              <div class="flex-1"></div>
               <button onclick="viewExpenseReport('${report.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-3 rounded-xl border border-slate-300 flex items-center gap-1.5 font-semibold transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -804,6 +757,11 @@
                 </svg>
                 Ver
               </button>
+              ${isOwner ? `
+                <button onclick="editExpenseReport('${report.id}')" class="bg-gradient-to-r from-yellow-100 to-orange-100 hover:from-yellow-600 hover:to-orange-600 text-yellow-700 hover:text-white py-2 px-3 rounded-xl flex items-center gap-1.5 font-semibold transition-all">
+                  ✏️ Editar
+                </button>
+              ` : ''}
               <button onclick="copyExpenseReportLink('${report.id}')" class="bg-gradient-to-r from-purple-100 to-violet-100 hover:from-purple-600 hover:to-violet-600 text-purple-700 hover:text-white py-2 px-3 rounded-xl flex items-center gap-1.5 font-semibold transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
@@ -812,8 +770,166 @@
               </button>
             </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
+    }
+
+    function openExpenseItemModal() {
+      state.currentExpenseItem = {
+        id: 'temp_' + Date.now(),
+        type: '',
+        amount: 0,
+        description: '',
+        receipt: null,
+        receiptFilename: null
+      };
+      state.expenseItemImage = null;
+      elements.expenseItemModalTitle.textContent = 'Añadir Gasto';
+      elements.expenseItemConfirmText.textContent = 'Añadir';
+      
+      // Reset form
+      elements.expenseItemType.value = '';
+      elements.expenseItemAmount.value = '';
+      elements.expenseItemDescription.value = '';
+      elements.expenseItemPreviewContainer.classList.add('hidden');
+      elements.expenseItemDeviceArea.classList.remove('hidden');
+      elements.expenseItemCameraArea.classList.add('hidden');
+      
+      elements.expenseItemModal.classList.remove('hidden');
+    }
+
+    window.editExpenseItem = (index) => {
+      state.editingExpenseIndex = index;
+      const item = state.currentExpenseItems[index];
+      
+      state.currentExpenseItem = { ...item };
+      state.expenseItemImage = item.receipt || null;
+      
+      elements.expenseItemModalTitle.textContent = 'Editar Gasto';
+      elements.expenseItemConfirmText.textContent = 'Guardar Cambios';
+      
+      // Populate form
+      elements.expenseItemType.value = item.type;
+      elements.expenseItemAmount.value = item.amount;
+      elements.expenseItemDescription.value = item.description || '';
+      
+      // Show preview if receipt exists
+      if (item.receipt || item.receiptUrl) {
+        renderExpenseItemPreview(item.receiptUrl || item.receipt, item.receiptFilename);
+      } else {
+        elements.expenseItemPreviewContainer.classList.add('hidden');
+        elements.expenseItemDeviceArea.classList.remove('hidden');
+      }
+      
+      elements.expenseItemModal.classList.remove('hidden');
+    };
+
+    function closeExpenseItemModal() {
+      if (state.scannerStream) {
+        state.scannerStream.getTracks().forEach(track => track.stop());
+        state.scannerStream = null;
+      }
+      elements.scannerModal.classList.add('hidden');
+      elements.scannerPreviewModal.classList.add('hidden');
+      elements.expenseItemModal.classList.add('hidden');
+      state.editingExpenseIndex = null;
+    }
+
+    function renderExpenseItemPreview(src, filename = 'archivo') {
+      elements.expenseItemPreviewContainer.classList.remove('hidden');
+      elements.expenseItemDeviceArea.classList.add('hidden');
+      elements.expenseItemCameraArea.classList.add('hidden');
+      
+      if (isImageFile(filename)) {
+        elements.expenseItemPreviewContent.innerHTML = `<img src="${src}" class="w-full h-full object-contain" alt="Vista previa" />`;
+      } else {
+        elements.expenseItemPreviewContent.innerHTML = `
+          <div class="flex flex-col items-center justify-center h-full bg-slate-100">
+            <span class="text-5xl mb-3">${getFileIcon(filename)}</span>
+            <span class="text-sm font-semibold text-slate-700 text-center px-4">${filename}</span>
+          </div>
+        `;
+      }
+    }
+
+    function confirmExpenseItem() {
+      const type = elements.expenseItemType.value;
+      const amount = parseFloat(elements.expenseItemAmount.value);
+      const description = elements.expenseItemDescription.value;
+
+      if (!type || !amount || isNaN(amount)) {
+        showToast('Por favor completa tipo y monto', 'error');
+        return;
+      }
+
+      state.currentExpenseItem.type = type;
+      state.currentExpenseItem.amount = amount;
+      state.currentExpenseItem.description = description;
+      state.currentExpenseItem.id = 'item_' + Date.now();
+      
+      if (state.editingExpenseIndex !== null) {
+        state.currentExpenseItems[state.editingExpenseIndex] = { ...state.currentExpenseItem };
+      } else {
+        state.currentExpenseItems.push({ ...state.currentExpenseItem });
+      }
+      
+      renderCurrentExpenseItems();
+      closeExpenseItemModal();
+    }
+
+    function handleExpenseItemFileSelected(file) {
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        state.expenseItemImage = e.target.result;
+        state.currentExpenseItem.receipt = e.target.result;
+        state.currentExpenseItem.receiptFilename = file.name;
+        renderExpenseItemPreview(e.target.result, file.name);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeExpenseItemImage() {
+      state.expenseItemImage = null;
+      state.currentExpenseItem.receipt = null;
+      state.currentExpenseItem.receiptFilename = null;
+      elements.expenseItemPreviewContainer.classList.add('hidden');
+      elements.expenseItemDeviceArea.classList.remove('hidden');
+    }
+
+    window.editExpenseReport = (id) => {
+      const report = state.expenseReports.find(r => r.id === id);
+      if (!report) return;
+      
+      if (report.created_by !== userId) {
+        showToast('Solo el creador puede editar este reporte', 'error');
+        return;
+      }
+      
+      state.editingReportId = id;
+      state.currentExpenseItems = (report.items || []).map(item => ({ ...item }));
+      elements.expenseReportDate.value = report.report_date;
+      elements.formTitle.innerHTML = '✏️ Editar Reporte de Gastos';
+      elements.btnSaveExpenseReport.innerHTML = '💾 Guardar Cambios';
+      elements.btnCancelEdit.classList.remove('hidden');
+      
+      state.activeView = 'create';
+      elements.btnToggleText.textContent = 'Ver Historial';
+      elements.createView.classList.remove('hidden');
+      elements.historyView.classList.add('hidden');
+      elements.clientView.classList.add('hidden');
+      renderCurrentExpenseItems();
+    };
+
+    function cancelEdit() {
+      state.editingReportId = null;
+      state.currentExpenseItems = [];
+      elements.expenseReportDate.value = new Date().toISOString().split('T')[0];
+      elements.formTitle.innerHTML = '💰 Nuevo Reporte de Gastos';
+      elements.btnSaveExpenseReport.innerHTML = '💾 Guardar Reporte Completo';
+      elements.btnCancelEdit.classList.add('hidden');
+      renderCurrentExpenseItems();
     }
 
     window.viewExpenseReport = (id) => {
@@ -832,20 +948,27 @@
       document.execCommand('copy');
       document.body.removeChild(tempInput);
       showToast('¡Enlace único copiado!');
-      addLog('Expenses', 'Enlace compartido copiado', 'SUCCESS');
+      addLog('UI', 'Enlace compartido copiado al portapapeles', 'SUCCESS');
     };
 
     window.deleteExpenseReport = async (reportId) => {
+      const report = state.expenseReports.find(r => r.id === reportId);
+      if (report && report.created_by !== userId) {
+        showToast('Solo el creador puede eliminar este reporte', 'error');
+        return;
+      }
+      
       try {
         const { error } = await appSupabase.from('expense_reports').delete().eq('id', reportId);
         if (error) throw error;
+        
         state.expenseReports = state.expenseReports.filter(r => r.id !== reportId);
         renderExpenseReports();
         showToast('Reporte eliminado correctamente');
-        addLog('Expenses', 'Reporte eliminado', 'SUCCESS');
+        addLog('Supabase', 'Reporte eliminado', 'SUCCESS');
       } catch (error) {
         showToast('Error al eliminar', 'error');
-        addLog('Expenses', `Error al eliminar: ${error.message}`, 'ERROR');
+        addLog('Supabase', `Error al eliminar: ${error.message}`, 'ERROR');
       }
     };
 
@@ -884,21 +1007,22 @@
       elements.expenseReportNotFound.classList.add('hidden');
       elements.expenseReportMeta.classList.add('hidden');
       elements.expenseReportId.textContent = id;
-      addLog('Expenses', `Cargando reporte ${id}...`, 'INFO');
+      addLog('UI', `Cargando reporte ${id}...`, 'INFO');
+      
       try {
         const { data, error } = await appSupabase.from('expense_reports').select('*').eq('id', id).single();
         if (error) throw error;
+        
         if (data) {
           renderExpenseReportDetail(data);
         } else {
           elements.expenseReportLoading.classList.add('hidden');
           elements.expenseReportNotFound.classList.remove('hidden');
-          addLog('Expenses', 'Reporte no encontrado', 'ERROR');
         }
       } catch (error) {
         elements.expenseReportLoading.classList.add('hidden');
         elements.expenseReportNotFound.classList.remove('hidden');
-        addLog('Expenses', `Error al cargar: ${error.message}`, 'ERROR');
+        addLog('ERROR', `No se pudo cargar el reporte: ${error.message}`, 'ERROR');
       }
     }
 
@@ -906,9 +1030,12 @@
       elements.expenseReportLoading.classList.add('hidden');
       elements.expenseReportContent.classList.remove('hidden');
       elements.expenseReportMeta.classList.remove('hidden');
+      
       elements.expenseReportDateText.textContent = new Date(report.report_date).toLocaleDateString('es-ES');
-      elements.expenseReportTotalText.textContent = `$${report.total.toFixed(2)}`;
-      elements.expenseReportItems.innerHTML = report.items.map(item => `
+      elements.expenseReportTotalText.textContent = `$${(report.total || 0).toFixed(2)}`;
+      
+      const items = report.items || [];
+      elements.expenseReportItems.innerHTML = items.map(item => `
         <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-md">
           <div class="flex items-start justify-between gap-3">
             <div class="flex-1 min-w-0">
@@ -918,24 +1045,74 @@
               </div>
               <p class="text-sm text-slate-600 mt-2">${item.description || 'Sin descripción'}</p>
             </div>
-            <div class="text-right">
-              <span class="text-lg font-bold text-emerald-600">$${item.amount.toFixed(2)}</span>
-            </div>
+            <div class="text-lg font-bold text-emerald-600">$${item.amount.toFixed(2)}</div>
           </div>
           ${item.receiptUrl ? `
             <div class="mt-3">
-              <img src="${item.receiptUrl}" alt="Factura" class="w-full max-h-64 object-contain rounded-xl border border-slate-200 cursor-pointer" onclick="openLightbox('${item.receiptUrl}')" />
+              ${isImageFile(item.receiptFilename || item.receiptUrl) 
+                ? `<img src="${item.receiptUrl}" alt="Factura" class="w-full max-h-60 object-contain rounded-lg border border-slate-300 cursor-pointer" onclick="openLightbox('${item.receiptUrl}')" />`
+                : `<div class="flex items-center gap-3 p-3 bg-slate-100 rounded-lg border border-slate-300">
+                    <span class="text-2xl">${getFileIcon(item.receiptFilename || item.receiptUrl)}</span>
+                    <span class="text-sm text-slate-700 truncate flex-1">${item.receiptFilename || 'Factura adjunta'}</span>
+                    <a href="${item.receiptUrl}" class="text-xs font-semibold text-purple-600 hover:text-purple-800" download="${item.receiptFilename || 'factura'}">Descargar</a>
+                  </div>`
+              }
             </div>
           ` : ''}
         </div>
-      `).join('');
-      addLog('Expenses', 'Reporte cargado exitosamente', 'SUCCESS');
+      `).join('') || '<p class="text-slate-500 text-center py-8">No hay gastos en este reporte</p>';
     }
 
-    window.openLightbox = (url) => {
-      elements.lightboxImg.src = url;
+    window.openLightbox = (src) => {
+      elements.lightboxImg.src = src;
       elements.lightbox.classList.remove('hidden');
     };
+
+    async function startScanner() {
+      try {
+        state.scannerStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+        });
+        elements.scannerVideo.srcObject = state.scannerStream;
+        elements.scannerModal.classList.remove('hidden');
+      } catch (error) {
+        showToast('Error al acceder a la cámara', 'error');
+        addLog('Scanner', `Error: ${error.message}`, 'ERROR');
+      }
+    }
+
+    function captureFromScanner() {
+      const video = elements.scannerVideo;
+      const canvas = elements.scannerCanvas;
+      const ctx = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      // Copy to preview canvas
+      const previewCtx = elements.previewCanvas.getContext('2d');
+      elements.previewCanvas.width = canvas.width;
+      elements.previewCanvas.height = canvas.height;
+      previewCtx.drawImage(canvas, 0, 0);
+      
+      elements.scannerModal.classList.add('hidden');
+      elements.scannerPreviewModal.classList.remove('hidden');
+    }
+
+    function saveScannerImage() {
+      const base64Image = elements.previewCanvas.toDataURL('image/jpeg', 0.95);
+      state.expenseItemImage = base64Image;
+      state.currentExpenseItem.receipt = base64Image;
+      state.currentExpenseItem.receiptFilename = `scaneo_${Date.now()}.jpg`;
+      renderExpenseItemPreview(base64Image, state.currentExpenseItem.receiptFilename);
+      elements.scannerPreviewModal.classList.add('hidden');
+      
+      // Stop scanner
+      if (state.scannerStream) {
+        state.scannerStream.getTracks().forEach(track => track.stop());
+        state.scannerStream = null;
+      }
+    }
 
     function toggleCredentials() {
       state.credentialsVisible = !state.credentialsVisible;
@@ -962,15 +1139,19 @@
     async function testConnection() {
       const url = elements.supabaseUrlInput.value.trim();
       const key = elements.supabaseKeyInput.value.trim();
+      
       if (!url || !key) {
         showToast('Por favor completa ambos campos', 'error');
         return;
       }
+      
       addLog('Supabase', 'Probando conexión...', 'INFO');
+      
       try {
         const testClient = window.supabase.createClient(url, key);
         const { data, error } = await testClient.from('expense_reports').select('count', { count: 'exact', head: true });
         if (error) throw error;
+        
         state.supabaseUrl = url;
         state.supabaseKey = key;
         localStorage.setItem('supabase_url', state.supabaseUrl);
@@ -978,69 +1159,102 @@
         appSupabase = testClient;
         updateConnectionStatus('connected');
         showToast('¡Conexión exitosa!', 'success');
-        addLog('Supabase', 'Conexión verificada', 'SUCCESS');
+        addLog('Supabase', 'Conectado correctamente', 'SUCCESS');
         loadExpenseReports();
       } catch (error) {
         updateConnectionStatus('disconnected', error.message);
-        showToast(`Error de conexión: ${error.message}`, 'error');
+        showToast(`Error: ${error.message}`, 'error');
         addLog('Supabase', `Error: ${error.message}`, 'ERROR');
       }
     }
 
-    let scannerStream = null;
-
-    async function openScanner() {
+    async function saveExpenseReport() {
+      const date = elements.expenseReportDate.value;
+      
+      if (!date) {
+        showToast('Por favor selecciona la fecha del reporte', 'error');
+        return;
+      }
+      
+      if (state.currentExpenseItems.length === 0) {
+        showToast('Por favor añade al menos un gasto', 'error');
+        return;
+      }
+      
+      if (state.isSaving) return;
+      
+      state.isSaving = true;
+      elements.btnSaveExpenseReport.disabled = true;
+      elements.btnSaveExpenseReport.innerHTML = '<svg class="w-5 h-5 animate-spin-custom" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> Guardando...';
+      addLog('Upload', 'Guardando reporte...', 'INFO');
+      
       try {
-        scannerStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
-        });
-        elements.scannerVideo.srcObject = scannerStream;
-        elements.scannerModal.classList.remove('hidden');
+        // Upload new files
+        const itemsWithUrls = await Promise.all(state.currentExpenseItems.map(async (item) => {
+          if (item.receipt && item.receipt.startsWith('data:')) {
+            // New file to upload
+            const base64Data = item.receipt.split(',')[1];
+            const fileExt = (item.receiptFilename || 'image.jpg').split('.').pop() || 'jpg';
+            const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+            
+            const { data, error } = await appSupabase.storage.from('expense-receipts').upload(fileName, Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)), { contentType: item.receipt.split(';')[0].split(':')[1], cacheControl: '3600', upsert: false });
+            if (error) throw error;
+            
+            const { data: { publicUrl } } = appSupabase.storage.from('expense-receipts').getPublicUrl(data.path);
+            
+            return { ...item, receiptUrl: publicUrl, receipt: null };
+          }
+          // Already has URL or no receipt
+          return item;
+        }));
+        
+        const total = itemsWithUrls.reduce((sum, item) => sum + item.amount, 0);
+        
+        if (state.editingReportId) {
+          // Update existing
+          const { error } = await appSupabase.from('expense_reports').update({
+            report_date: date,
+            items: itemsWithUrls,
+            total: total
+          }).eq('id', state.editingReportId);
+          
+          if (error) throw error;
+          showToast('¡Reporte actualizado!', 'success');
+          addLog('Upload', 'Reporte actualizado', 'SUCCESS');
+        } else {
+          // Create new
+          const { data: reportData, error: reportError } = await appSupabase.from('expense_reports').insert({
+            report_date: date,
+            items: itemsWithUrls,
+            total: total,
+            created_by: userId,
+            created_at: new Date().toISOString()
+          }).select();
+          
+          if (reportError) throw reportError;
+          copyExpenseReportLink(reportData[0].id);
+          showToast('¡Reporte guardado exitosamente!', 'success');
+          addLog('Upload', 'Reporte guardado', 'SUCCESS');
+        }
+        
+        cancelEdit();
+        loadExpenseReports();
       } catch (error) {
-        showToast('Error al acceder a la cámara', 'error');
-        addLog('Scanner', `Error: ${error.message}`, 'ERROR');
+        showToast(`Error al guardar: ${error.message}`, 'error');
+        addLog('Upload', `Error: ${error.message}`, 'ERROR');
+      } finally {
+        state.isSaving = false;
+        elements.btnSaveExpenseReport.disabled = false;
+        elements.btnSaveExpenseReport.innerHTML = state.editingReportId ? '💾 Guardar Cambios' : '💾 Guardar Reporte Completo';
       }
-    }
-
-    function closeScanner() {
-      if (scannerStream) {
-        scannerStream.getTracks().forEach(track => track.stop());
-        scannerStream = null;
-      }
-      elements.scannerModal.classList.add('hidden');
-    }
-
-    function captureFromScanner() {
-      const video = elements.scannerVideo;
-      const canvas = elements.scannerCanvas;
-      const ctx = canvas.getContext('2d');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const previewCtx = elements.previewCanvas.getContext('2d');
-      elements.previewCanvas.width = canvas.width;
-      elements.previewCanvas.height = canvas.height;
-      previewCtx.drawImage(canvas, 0, 0);
-      elements.scannerPreviewModal.classList.remove('hidden');
-    }
-
-    function saveScannerImage() {
-      const canvas = elements.previewCanvas;
-      const base64Image = canvas.toDataURL('image/jpeg', 0.95);
-      state.expenseItemImage = base64Image;
-      state.currentExpenseItem.receipt = base64Image;
-      elements.expenseItemPreviewImg.src = base64Image;
-      elements.expenseItemPreviewContainer.classList.remove('hidden');
-      elements.expenseItemDeviceArea.classList.add('hidden');
-      elements.expenseItemCameraArea.classList.add('hidden');
-      elements.scannerPreviewModal.classList.add('hidden');
-      closeScanner();
     }
 
     function init() {
       elements.year.textContent = new Date().getFullYear();
       elements.expenseReportDate.value = new Date().toISOString().split('T')[0];
+      
       elements.btnToggleView.addEventListener('click', toggleView);
+      elements.btnCancelEdit.addEventListener('click', cancelEdit);
       elements.btnToggleCredentials.addEventListener('click', toggleCredentials);
       elements.btnSaveCredentials.addEventListener('click', saveCredentials);
       elements.btnTestConnection.addEventListener('click', testConnection);
@@ -1056,7 +1270,6 @@
       elements.expenseItemBtnDevice.addEventListener('click', () => {
         state.expenseItemImageSource = 'device';
         elements.expenseItemBtnDevice.classList.add('bg-gradient-to-r', 'from-purple-500', 'to-violet-600', 'text-white');
-        elements.expenseItemBtnDevice.classList.remove('text-slate-500');
         elements.expenseItemBtnCamera.classList.remove('bg-gradient-to-r', 'from-purple-500', 'to-violet-600', 'text-white');
         elements.expenseItemBtnCamera.classList.add('text-slate-500');
         elements.expenseItemDeviceArea.classList.remove('hidden');
@@ -1065,12 +1278,12 @@
       elements.expenseItemBtnCamera.addEventListener('click', () => {
         state.expenseItemImageSource = 'camera';
         elements.expenseItemBtnCamera.classList.add('bg-gradient-to-r', 'from-purple-500', 'to-violet-600', 'text-white');
-        elements.expenseItemBtnCamera.classList.remove('text-slate-500');
         elements.expenseItemBtnDevice.classList.remove('bg-gradient-to-r', 'from-purple-500', 'to-violet-600', 'text-white');
         elements.expenseItemBtnDevice.classList.add('text-slate-500');
         elements.expenseItemCameraArea.classList.remove('hidden');
         elements.expenseItemDeviceArea.classList.add('hidden');
       });
+      
       elements.expenseItemFileDrop.addEventListener('click', () => elements.expenseItemFileInput.click());
       elements.expenseItemFileInput.addEventListener('change', (e) => {
         if (e.target.files && e.target.files[0]) {
@@ -1078,10 +1291,22 @@
         }
       });
       elements.expenseItemBtnRemove.addEventListener('click', removeExpenseItemImage);
-      elements.expenseItemBtnStartScanner.addEventListener('click', openScanner);
       
-      elements.scannerBtnClose.addEventListener('click', closeScanner);
-      elements.scannerBtnCancel.addEventListener('click', closeScanner);
+      elements.expenseItemBtnStartScanner.addEventListener('click', startScanner);
+      elements.scannerBtnClose.addEventListener('click', () => {
+        if (state.scannerStream) {
+          state.scannerStream.getTracks().forEach(track => track.stop());
+          state.scannerStream = null;
+        }
+        elements.scannerModal.classList.add('hidden');
+      });
+      elements.scannerBtnCancel.addEventListener('click', () => {
+        if (state.scannerStream) {
+          state.scannerStream.getTracks().forEach(track => track.stop());
+          state.scannerStream = null;
+        }
+        elements.scannerModal.classList.add('hidden');
+      });
       elements.scannerBtnCapture.addEventListener('click', captureFromScanner);
       elements.scannerBtnGallery.addEventListener('click', () => elements.scannerFileInput.click());
       elements.scannerFileInput.addEventListener('change', (e) => {
@@ -1101,12 +1326,18 @@
           reader.readAsDataURL(e.target.files[0]);
         }
       });
-      elements.previewBtnRetake.addEventListener('click', () => elements.scannerPreviewModal.classList.add('hidden'));
+      elements.previewBtnRetake.addEventListener('click', () => {
+        elements.scannerPreviewModal.classList.add('hidden');
+        if (state.scannerStream) {
+          elements.scannerModal.classList.remove('hidden');
+        }
+      });
       elements.previewBtnSave.addEventListener('click', saveScannerImage);
-
+      
       const urlParams = new URLSearchParams(window.location.search);
       const reporteId = urlParams.get('reporteId');
       const accion = urlParams.get('accion');
+      
       if (reporteId) {
         state.selectedReportId = reporteId;
         state.activeView = 'client';
@@ -1115,7 +1346,7 @@
       } else if (accion === 'historial') {
         toggleView();
       }
-
+      
       autoConnectSupabase();
     }
 
@@ -1123,7 +1354,3 @@
   </script>
 </body>
 </html>
-  `;
-    }
-  }
-}
