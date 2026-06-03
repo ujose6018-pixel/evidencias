@@ -516,8 +516,8 @@
         return `
           <div class="border-b border-slate-200 pb-1.5 last:border-0 flex items-start gap-2">
             <span class="text-slate-500 shrink-0">[${log.timestamp}]</span>
-            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 ${typeColors[type]}">${service}</span>
-            <pre class="whitespace-pre-wrap flex-1 text-slate-700 font-mono">${detail}</pre>
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 ${typeColors[log.type]}">${log.service}</span>
+            <pre class="whitespace-pre-wrap flex-1 text-slate-700 font-mono">${log.detail}</pre>
           </div>
         `;
       }).join('');
@@ -574,9 +574,11 @@
             updateConnectionStatus('missing-table', 'Falta la tabla "expense_reports" - ve a SQL Editor en Supabase');
             addLog('Supabase', 'ERROR: Falta crear la tabla "expense_reports"', 'ERROR');
           } else {
-            updateConnectionStatus('missing-table', error.message);
+            updateConnectionStatus('disconnected', error.message);
             addLog('Supabase', `Error: ${error.message}`, 'ERROR');
           }
+          // Mostrar panel de configuración si hay error
+          elements.realModeConfig.classList.remove('hidden');
         } else {
           updateConnectionStatus('connected');
           addLog('Supabase', '¡Conectado exitosamente!', 'SUCCESS');
@@ -585,6 +587,7 @@
       } catch (error) {
         updateConnectionStatus('disconnected', error.message);
         addLog('Supabase', `Error de conexión: ${error.message}`, 'ERROR');
+        elements.realModeConfig.classList.remove('hidden');
       }
     }
 
