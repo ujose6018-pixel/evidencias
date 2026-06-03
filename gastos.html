@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+  <meta name="theme-color" content="#10b981">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.json">
+  <title>Gastos - Workspace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-pulse-custom { animation: pulse 1s infinite; }
+    .animate-spin-custom { animation: spin 1s linear infinite; }
+    .glass {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+    }
+    button, input, select, textarea {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    input[type="date"], input[type="number"], select, textarea {
+      font-size: 16px;
+    }
+    @media screen and (-webkit-min-device-pixel-ratio: 0) {
+      select, textarea, input {
+        font-size: 16px;
+      }
+    }
+    @supports (padding-top: env(safe-area-inset-top)) {
+      body {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-violet-50 text-slate-800 font-sans">
+  
+  <div id="toast" class="fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-xl flex items-center gap-3 border border-white/30 bg-white/95 text-slate-800 hidden transition-all duration-300"></div>
+
+  <div id="lightbox" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out hidden">
+    <img id="lightbox-img" class="max-h-[90vh] max-w-full rounded-3xl shadow-2xl object-contain" alt="Factura Ampliada" />
+    <div class="absolute bottom-6 glass px-5 py-3 rounded-full text-sm text-slate-700 font-medium shadow-lg border border-white/30">
+      Toca cualquier punto para cerrar la vista
+    </div>
+  </div>
+
+  <div id="scanner-modal" class="fixed inset-0 z-[60] bg-slate-900 flex flex-col hidden">
+    <div class="flex items-center justify-between p-4 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 z-10">
+      <button id="scanner-btn-close" class="p-3 rounded-full bg-slate-800 hover:bg-slate-700 text-white transition-all">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <h3 class="text-white font-bold text-lg">Escáner de Facturas</h3>
+      <button id="scanner-btn-flip" class="p-3 rounded-full bg-slate-800 hover:bg-slate-700 text-white transition-all">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
+    </div>
+    <div class="relative flex-1 flex items-center justify-center bg-black overflow-hidden">
+      <video id="scanner-video" autoplay playsinline class="w-full h-full object-cover"></video>
+      <canvas id="scanner-canvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+      <div id="scanner-overlay" class="absolute inset-0 pointer-events-none">
+        <svg id="scanner-corners" class="absolute inset-0 w-full h-full"></svg>
+        <div id="scanner-guide" class="absolute inset-8 border-2 border-dashed border-white/50 rounded-2xl"></div>
+      </div>
+    </div>
+    <div class="bg-slate-900/95 backdrop-blur-md p-6 border-t border-slate-800">
+      <div class="flex items-center justify-center gap-6">
+        <button id="scanner-btn-gallery" class="flex flex-col items-center gap-2 p-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all">
+          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span class="text-xs font-semibold">Galería</span>
+        </button>
+        <input type="file" id="scanner-file-input" accept="image/*" class="hidden" />
+        <button id="scanner-btn-capture" class="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 flex items-center justify-center border-4 border-white shadow-2xl transition-all hover:scale-105 active:scale-95">
+          <div class="w-8 h-8 rounded-full bg-white"></div>
+        </button>
+        <button id="scanner-btn-cancel" class="flex flex-col items-center gap-2 p-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all">
+          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <span class="text-xs font-semibold">Cancelar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="scanner-preview-modal" class="fixed inset-0 z-[60] bg-slate-900 flex flex-col hidden">
+    <div class="flex items-center justify-between p-4 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 z-10">
+      <button id="preview-btn-retake" class="p-3 rounded-full bg-slate-800 hover:bg-slate-700 text-white transition-all">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+        </svg>
+      </button>
+      <h3 class="text-white font-bold text-lg">Ajustar Escaneo</h3>
+      <div class="w-12"></div>
+    </div>
+    <div class="relative flex-1 flex items-center justify-center bg-slate-800 overflow-hidden p-4">
+      <canvas id="preview-canvas" class="max-w-full max-h-full rounded-xl shadow-2xl"></canvas>
+    </div>
+    <div class="bg-slate-900/95 backdrop-blur-md p-6 border-t border-slate-800">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex gap-2">
+          <button id="preview-btn-color" class="px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-semibold border border-slate-700">Color</button>
+          <button id="preview-btn-gray" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-400 text-sm font-semibold border border-slate-800 hover:text-white">Gris</button>
+          <button id="preview-btn-bw" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-400 text-sm font-semibold border border-slate-800 hover:text-white">B/N</button>
+        </div>
+        <button id="preview-btn-enhance" class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-violet-600 text-white text-sm font-semibold">Mejorar</button>
+      </div>
+      <div class="flex items-center justify-center gap-4">
+        <button id="preview-btn-save" class="flex-1 py-4 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white active:scale-[0.98]">
+          ✅ Guardar Escaneo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="expense-item-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white border border-slate-200 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-lg sm:max-w-md shadow-2xl shadow-slate-900/30 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-base sm:text-sm font-bold text-slate-800">Añadir Gasto</h3>
+        <button id="btn-close-expense-modal" type="button" class="text-slate-500 hover:text-slate-800 p-2 -mr-2 rounded-full hover:bg-slate-100 active:bg-slate-200">
+          <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="space-y-5 text-xs sm:text-sm">
+        <div>
+          <label class="block text-slate-700 font-semibold mb-2">Tipo de Gasto</label>
+          <select id="expense-item-type" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+            <option value="">Selecciona un tipo...</option>
+            <option value="comida">🍔 Comida y Alimentación</option>
+            <option value="transporte">🚗 Transporte</option>
+            <option value="alojamiento">🏨 Alojamiento</option>
+            <option value="combustible">⛽ Combustible</option>
+            <option value="peajes">🛣️ Peajes</option>
+            <option value="materiales">🔧 Materiales</option>
+            <option value="servicios">📞 Servicios</option>
+            <option value="otros">📦 Otros</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-700 font-semibold mb-2">Monto ($)</label>
+          <input id="expense-item-amount" type="number" step="0.01" placeholder="Ej. 150.00" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all" />
+        </div>
+        <div>
+          <label class="block text-slate-700 font-semibold mb-2">Descripción</label>
+          <textarea id="expense-item-description" rows="3" placeholder="Detalla el gasto..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all resize-none"></textarea>
+        </div>
+        <div class="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50">
+          <div class="bg-white px-4 py-4 border-b border-slate-200 flex items-center justify-between">
+            <span class="text-xs sm:text-sm font-bold text-slate-700">Foto de Factura</span>
+            <div class="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs">
+              <button id="expense-item-btn-device" type="button" class="flex-1 px-4 py-2 rounded-lg font-semibold transition bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg shadow-purple-500/20">
+                📁 Galería
+              </button>
+              <button id="expense-item-btn-camera" type="button" class="flex-1 px-4 py-2 rounded-lg font-semibold transition text-slate-500">
+                📷 Cámara
+              </button>
+            </div>
+          </div>
+          <div class="p-5">
+            <div id="expense-item-device-area" class="space-y-4">
+              <div id="expense-item-file-drop" class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-purple-500 hover:bg-purple-50 active:border-purple-400 active:bg-purple-100">
+                <input id="expense-item-file-input" type="file" accept="image/*" class="hidden" />
+                <svg class="w-10 h-10 mx-auto text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p class="mt-3 text-sm font-semibold text-slate-700">Toca para subir foto</p>
+              </div>
+            </div>
+            <div id="expense-item-camera-area" class="space-y-4 hidden">
+              <div class="bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-200 rounded-2xl p-6 text-center">
+                <svg class="w-16 h-16 text-purple-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="text-lg font-bold text-slate-800 mb-2">Escáner de Facturas</h3>
+                <p class="text-sm text-slate-600 mb-4">Abre la cámara en pantalla completa para escanear facturas</p>
+                <button id="expense-item-btn-start-scanner" type="button" class="w-full bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/30 active:scale-[0.98]">
+                  Abrir Escáner
+                </button>
+              </div>
+            </div>
+          </div>
+          <div id="expense-item-preview-container" class="px-5 pb-5 hidden">
+            <div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-slate-300 bg-slate-50">
+              <img id="expense-item-preview-img" class="w-full h-full object-contain" src="" alt="Factura" />
+              <button id="expense-item-btn-remove" type="button" class="absolute top-3 right-3 bg-red-500 hover:bg-red-600 text-white p-2.5 rounded-full active:scale-[0.95] shadow-lg shadow-red-500/30">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-8">
+        <button id="btn-cancel-expense-item" type="button" class="flex-1 py-4 rounded-xl font-bold text-base sm:text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-[0.98]">
+          Cancelar
+        </button>
+        <button id="btn-confirm-expense-item" type="button" class="flex-1 py-4 rounded-xl font-bold text-base sm:text-sm bg-gradient-to-r from-purple-500 to-violet-600 text-white active:scale-[0.98] shadow-lg shadow-purple-500/30">
+          Añadir
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="glass border-b border-white/50 px-4 py-4 sticky top-0 z-40 shadow-xl">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="p-2 rounded-xl hover:bg-white/50 transition-all">
+          <svg class="w-6 h-6 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </a>
+        <div class="flex items-center gap-3">
+          <div class="bg-gradient-to-br from-purple-500 to-violet-600 p-2 rounded-xl shadow-lg">
+            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-lg font-extrabold text-slate-800" id="page-title">Gastos</h1>
+            <p class="text-xs text-slate-500" id="page-subtitle">Registro de gastos y viáticos</p>
+          </div>
+        </div>
+      </div>
+      <button id="btn-toggle-view" class="glass hover:bg-white border border-slate-200 text-slate-700 text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+        <span id="btn-toggle-text">Ver Historial</span>
+      </button>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto p-4 lg:p-6">
+    
+    <div id="create-view" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="lg:col-span-7 flex flex-col gap-6">
+        <div id="connection-status" class="bg-white border border-slate-200 p-5 rounded-3xl shadow-xl shadow-slate-200/50">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div id="connection-indicator" class="w-4 h-4 rounded-full bg-slate-400"></div>
+              <div>
+                <span id="connection-status-text" class="text-base font-semibold text-slate-700">Conectando...</span>
+                <p id="connection-error" class="text-sm text-slate-500 mt-1">Verificando conexión con Supabase</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <button id="btn-toggle-credentials" class="glass border border-slate-300 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition-all hover:bg-white hover:shadow-md">
+                ⚙️ Configurar Credenciales
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="real-mode-config" class="bg-white backdrop-blur-xl border border-slate-200 rounded-3xl p-7 shadow-xl shadow-slate-200/50 space-y-5 hidden">
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            🔑 Configuración de Supabase
+          </h2>
+          <div class="grid grid-cols-1 gap-5 text-sm">
+            <div>
+              <label class="block text-slate-600 font-semibold mb-2">Supabase Project URL</label>
+              <input id="supabase-url" type="text" placeholder="https://tu-proyecto.supabase.co" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all font-mono" />
+            </div>
+            <div>
+              <label class="block text-slate-600 font-semibold mb-2">Supabase Public Key (anon)</label>
+              <input id="supabase-key" type="password" placeholder="sb_publishable_..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all font-mono" />
+            </div>
+            <div class="flex gap-3">
+              <button id="btn-save-credentials" class="flex-1 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white text-sm font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-purple-500/30 active:scale-[0.98]">
+                💾 Guardar Credenciales
+              </button>
+              <button id="btn-test-connection" class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-sm font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-emerald-500/30 active:scale-[0.98]">
+                🔍 Verificar Conexión
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="section-expenses" class="bg-white backdrop-blur-xl border border-slate-200 rounded-3xl p-7 shadow-xl shadow-slate-200/50 space-y-5">
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            💰 Nuevo Reporte de Gastos
+          </h2>
+          <div class="text-sm">
+            <label class="block text-slate-600 font-semibold mb-2">Fecha del Reporte</label>
+            <input id="expense-report-date" type="date" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all" />
+          </div>
+          <div id="expenses-list-container" class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs sm:text-sm font-bold text-slate-600 uppercase tracking-wider">Gastos del Día</span>
+              <span id="expenses-total" class="text-base sm:text-sm font-bold text-emerald-600">Total: $0.00</span>
+            </div>
+            <div id="expenses-list" class="space-y-3 max-h-[250px] overflow-y-auto pr-2">
+              <p class="text-xs sm:text-sm text-slate-600 italic text-center py-8">No hay gastos añadidos aún</p>
+            </div>
+          </div>
+          <button id="btn-add-expense-item" type="button" class="w-full py-4 sm:py-3 rounded-2xl font-bold text-base sm:text-sm transition-all flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-dashed border-slate-300 active:scale-[0.98]">
+            <span class="text-2xl sm:text-xl">+</span> Añadir Gasto
+          </button>
+          <button id="btn-save-expense-report" class="w-full py-4 sm:py-3.5 rounded-2xl font-bold text-base sm:text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white active:scale-[0.98]">
+            💾 Guardar Reporte Completo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="history-view" class="hidden">
+      <div class="bg-white backdrop-blur-xl border border-slate-200 rounded-3xl p-6 shadow-xl shadow-slate-200/50 flex flex-col min-h-[600px]">
+        <div class="mb-4">
+          <h2 class="text-lg font-bold text-slate-800">
+            📋 Historial de Reportes de Gastos
+          </h2>
+          <p class="text-sm text-slate-500 mt-1">Reportes guardados</p>
+        </div>
+        <div id="no-items" class="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-500">
+          <svg class="w-12 h-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          </svg>
+          <p class="text-lg font-semibold mt-4 text-slate-700">No hay reportes de gastos</p>
+          <p class="text-sm text-slate-500 max-w-[200px] mt-2">Crea tu primer reporte de gastos</p>
+        </div>
+        <div id="items-container" class="space-y-3 flex-1 overflow-y-auto max-h-[500px] pr-2 hidden"></div>
+      </div>
+    </div>
+
+    <div id="client-view" class="hidden">
+      <div class="max-w-4xl mx-auto bg-white backdrop-blur-xl rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
+        <div class="bg-gradient-to-br from-purple-50 to-violet-50 p-6 md:p-8 border-b border-slate-200">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="text-xs uppercase font-mono tracking-wider text-purple-700 font-bold">Reporte de Gastos</span>
+              </div>
+              <h2 id="expense-report-title" class="text-xl md:text-2xl font-bold text-slate-800 mt-3">Reporte de Gastos</h2>
+            </div>
+            <div class="text-left sm:text-right">
+              <p class="text-xs text-slate-600 font-mono">ID del Reporte:</p>
+              <p id="expense-report-id" class="text-xs text-slate-500 font-mono truncate max-w-[180px]"></p>
+            </div>
+          </div>
+          <div id="expense-report-meta" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-5 border-t border-slate-200 text-sm hidden">
+            <div class="flex items-center gap-2 text-slate-700">
+              <span>Fecha:</span>
+              <strong id="expense-report-date-text" class="text-slate-800"></strong>
+            </div>
+            <div class="flex items-center gap-2 text-slate-700 sm:justify-end">
+              <span>Total:</span>
+              <strong id="expense-report-total-text" class="text-emerald-600"></strong>
+            </div>
+          </div>
+        </div>
+        <div id="expense-report-loading" class="p-12 text-center text-slate-600 flex flex-col items-center justify-center gap-3">
+          <div class="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin-custom"></div>
+          <p class="text-sm font-semibold text-slate-700">Cargando datos...</p>
+        </div>
+        <div id="expense-report-content" class="p-6 md:p-8 space-y-6 hidden">
+          <div class="space-y-3">
+            <h3 class="text-xs uppercase font-mono tracking-wider text-slate-600 font-bold border-b border-slate-200 pb-3">
+              📋 Detalle de Gastos
+            </h3>
+            <div id="expense-report-items" class="space-y-3"></div>
+          </div>
+        </div>
+        <div id="expense-report-not-found" class="p-12 text-center text-slate-500 hidden">
+          <p class="text-sm font-semibold">No se encontraron datos del reporte</p>
+        </div>
+        <div class="bg-slate-50 p-6 text-center border-t border-slate-200 text-xs text-slate-600">
+          <p>© <span id="year"></span> Portal Técnico Integrado</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-white/80 backdrop-blur-xl border-t border-slate-200 p-4 shadow-xl shadow-slate-200/30 mt-8">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-xs font-bold tracking-wider text-slate-600 uppercase font-mono">
+          📟 Consola del Sistema
+        </h3>
+        <button id="btn-clear-logs" class="text-slate-600 hover:text-slate-800 text-xs font-semibold transition-colors">
+          Limpiar Logs
+        </button>
+      </div>
+      <div id="logs-container" class="bg-slate-50 border border-slate-200 rounded-2xl p-4 font-mono text-xs text-slate-700 h-28 overflow-y-auto space-y-2">
+        <p class="text-slate-500 italic">Consola inactiva</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let appSupabase = null;
+    const state = {
+      activeView: 'create',
+      expenseReports: [],
+      selectedReportId: null,
+      supabaseUrl: localStorage.getItem('supabase_url') || 'https://snqfoqslgxelisezeqqc.supabase.co',
+      supabaseKey: localStorage.getItem('supabase_key') || 'sb_publishable_-YUywAvjOPQ23akv61M-5g_ERpDvyS_',
+      currentExpenseItems: [],
+      currentExpenseItem: null,
+      expenseItemImage: null,
+      expenseItemImageSource: 'device',
+      isSaving: false,
+      logs: [],
+      credentialsVisible: false
+    };
+
+    const elements = {
+      toast: document.getElementById('toast'),
+      lightbox: document.getElementById('lightbox'),
+      lightboxImg: document.getElementById('lightbox-img'),
+      connectionIndicator: document.getElementById('connection-indicator'),
+      connectionStatusText: document.getElementById('connection-status-text'),
+      connectionError: document.getElementById('connection-error'),
+      realModeConfig: document.getElementById('real-mode-config'),
+      btnToggleCredentials: document.getElementById('btn-toggle-credentials'),
+      supabaseUrlInput: document.getElementById('supabase-url'),
+      supabaseKeyInput: document.getElementById('supabase-key'),
+      btnSaveCredentials: document.getElementById('btn-save-credentials'),
+      btnTestConnection: document.getElementById('btn-test-connection'),
+      logsContainer: document.getElementById('logs-container'),
+      btnClearLogs: document.getElementById('btn-clear-logs'),
+      btnToggleView: document.getElementById('btn-toggle-view'),
+      btnToggleText: document.getElementById('btn-toggle-text'),
+      createView: document.getElementById('create-view'),
+      historyView: document.getElementById('history-view'),
+      clientView: document.getElementById('client-view'),
+      expenseReportDate: document.getElementById('expense-report-date'),
+      expensesListContainer: document.getElementById('expenses-list-container'),
+      expensesList: document.getElementById('expenses-list'),
+      expensesTotal: document.getElementById('expenses-total'),
+      btnAddExpenseItem: document.getElementById('btn-add-expense-item'),
+      expenseItemModal: document.getElementById('expense-item-modal'),
+      btnCloseExpenseModal: document.getElementById('btn-close-expense-modal'),
+      expenseItemType: document.getElementById('expense-item-type'),
+      expenseItemAmount: document.getElementById('expense-item-amount'),
+      expenseItemDescription: document.getElementById('expense-item-description'),
+      expenseItemBtnDevice: document.getElementById('expense-item-btn-device'),
+      expenseItemBtnCamera: document.getElementById('expense-item-btn-camera'),
+      expenseItemDeviceArea: document.getElementById('expense-item-device-area'),
+      expenseItemCameraArea: document.getElementById('expense-item-camera-area'),
+      expenseItemFileDrop: document.getElementById('expense-item-file-drop'),
+      expenseItemFileInput: document.getElementById('expense-item-file-input'),
+      expenseItemPreviewContainer: document.getElementById('expense-item-preview-container'),
+      expenseItemPreviewImg: document.getElementById('expense-item-preview-img'),
+      expenseItemBtnRemove: document.getElementById('expense-item-btn-remove'),
+      btnCancelExpenseItem: document.getElementById('btn-cancel-expense-item'),
+      btnConfirmExpenseItem: document.getElementById('btn-confirm-expense-item'),
+      btnSaveExpenseReport: document.getElementById('btn-save-expense-report'),
+      expenseItemBtnStartScanner: document.getElementById('expense-item-btn-start-scanner'),
+      scannerModal: document.getElementById('scanner-modal'),
+      scannerBtnClose: document.getElementById('scanner-btn-close'),
+      scannerBtnFlip: document.getElementById('scanner-btn-flip'),
+      scannerBtnCapture: document.getElementById('scanner-btn-capture'),
+      scannerBtnGallery: document.getElementById('scanner-btn-gallery'),
+      scannerFileInput: document.getElementById('scanner-file-input'),
+      scannerBtnCancel: document.getElementById('scanner-btn-cancel'),
+      scannerVideo: document.getElementById('scanner-video'),
+      scannerCanvas: document.getElementById('scanner-canvas'),
+      scannerPreviewModal: document.getElementById('scanner-preview-modal'),
+      previewBtnRetake: document.getElementById('preview-btn-retake'),
+      previewBtnColor: document.getElementById('preview-btn-color'),
+      previewBtnGray: document.getElementById('preview-btn-gray'),
+      previewBtnBw: document.getElementById('preview-btn-bw'),
+      previewBtnEnhance: document.getElementById('preview-btn-enhance'),
+      previewBtnSave: document.getElementById('preview-btn-save'),
+      previewCanvas: document.getElementById('preview-canvas'),
+      year: document.getElementById('year'),
+      noItems: document.getElementById('no-items'),
+      itemsContainer: document.getElementById('items-container'),
+      expenseReportTitle: document.getElementById('expense-report-title'),
+      expenseReportId: document.getElementById('expense-report-id'),
+      expenseReportMeta: document.getElementById('expense-report-meta'),
+      expenseReportDateText: document.getElementById('expense-report-date-text'),
+      expenseReportTotalText: document.getElementById('expense-report-total-text'),
+      expenseReportLoading: document.getElementById('expense-report-loading'),
+      expenseReportContent: document.getElementById('expense-report-content'),
+      expenseReportItems: document.getElementById('expense-report-items'),
+      expenseReportNotFound: document.getElementById('expense-report-not-found')
+    };
+
+    function addLog(service, detail, type = 'INFO') {
+      const timestamp = new Date().toLocaleTimeString();
+      state.logs.unshift({ id: Date.now() + Math.random(), timestamp, service, detail, type });
+      renderLogs();
+    }
+
+    function renderLogs() {
+      if (state.logs.length === 0) {
+        elements.logsContainer.innerHTML = '<p class="text-slate-500 italic">Consola inactiva</p>';
+        return;
+      }
+      elements.logsContainer.innerHTML = state.logs.map(log => {
+        const typeColors = {
+          'ERROR': 'bg-red-100 text-red-700',
+          'SUCCESS': 'bg-green-100 text-green-700',
+          'INFO': 'bg-purple-100 text-purple-700'
+        };
+        return `
+          <div class="border-b border-slate-200 pb-1.5 last:border-0 flex items-start gap-2">
+            <span class="text-slate-500 shrink-0">[${log.timestamp}]</span>
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 ${typeColors[type]}">${service}</span>
+            <pre class="whitespace-pre-wrap flex-1 text-slate-700 font-mono">${detail}</pre>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function showToast(message, type = 'success') {
+      const bg = type === 'error' 
+        ? 'bg-gradient-to-r from-red-500 to-orange-500 border-red-400 text-white shadow-lg shadow-red-200' 
+        : 'bg-gradient-to-r from-purple-500 to-violet-600 border-purple-400 text-white shadow-lg shadow-purple-200';
+      const icon = type === 'error' ? '⚠️' : '✨';
+      elements.toast.innerHTML = `<span>${icon}</span><span class="text-sm font-semibold">${message}</span>`;
+      elements.toast.className = `fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-xl flex items-center gap-3 border transition-all duration-300 ${bg}`;
+      elements.toast.classList.remove('hidden');
+      setTimeout(() => elements.toast.classList.add('hidden'), 4000);
+    }
+
+    function updateConnectionStatus(status, errorMsg = '') {
+      const indicator = elements.connectionIndicator;
+      const statusText = elements.connectionStatusText;
+      const errorText = elements.connectionError;
+      switch(status) {
+        case 'connected':
+          indicator.className = 'w-3 h-3 rounded-full bg-green-500 animate-pulse-custom shadow-lg shadow-green-500/40';
+          statusText.textContent = '✅ Conexión estable';
+          statusText.className = 'text-sm font-semibold text-green-700';
+          errorText.textContent = 'Todo funcionando correctamente';
+          errorText.className = 'text-xs text-green-600 mt-1';
+          break;
+        case 'missing-table':
+          indicator.className = 'w-3 h-3 rounded-full bg-orange-500 animate-pulse-custom shadow-lg shadow-orange-500/40';
+          statusText.textContent = '⚠️ Falta crear tabla';
+          statusText.className = 'text-sm font-semibold text-orange-700';
+          errorText.textContent = errorMsg || 'Crea la tabla "expense_reports" en Supabase';
+          errorText.className = 'text-xs text-orange-600 mt-1';
+          break;
+        case 'disconnected':
+        default:
+          indicator.className = 'w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/40';
+          statusText.textContent = '❌ Sin conexión';
+          statusText.className = 'text-sm font-semibold text-red-700';
+          errorText.textContent = errorMsg || 'Error de conexión con Supabase';
+          errorText.className = 'text-xs text-red-600 mt-1';
+          break;
+      }
+    }
+
+    async function autoConnectSupabase() {
+      addLog('Supabase', 'Conectando automáticamente...', 'INFO');
+      try {
+        appSupabase = window.supabase.createClient(state.supabaseUrl, state.supabaseKey);
+        const { data, error } = await appSupabase.from('expense_reports').select('count', { count: 'exact', head: true });
+        if (error) {
+          if (error.message.includes('relation') && error.message.includes('does not exist')) {
+            updateConnectionStatus('missing-table', 'Falta la tabla "expense_reports" - ve a SQL Editor en Supabase');
+            addLog('Supabase', 'ERROR: Falta crear la tabla "expense_reports"', 'ERROR');
+          } else {
+            updateConnectionStatus('missing-table', error.message);
+            addLog('Supabase', `Error: ${error.message}`, 'ERROR');
+          }
+        } else {
+          updateConnectionStatus('connected');
+          addLog('Supabase', '¡Conectado exitosamente!', 'SUCCESS');
+          loadExpenseReports();
+        }
+      } catch (error) {
+        updateConnectionStatus('disconnected', error.message);
+        addLog('Supabase', `Error de conexión: ${error.message}`, 'ERROR');
+      }
+    }
+
+    async function loadExpenseReports() {
+      try {
+        const { data, error } = await appSupabase
+          .from('expense_reports')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        state.expenseReports = data || [];
+        renderExpenseReports();
+      } catch (error) {
+        addLog('Supabase', `Error al cargar reportes: ${error.message}`, 'ERROR');
+      }
+    }
+
+    const getExpenseTypeLabel = (type) => {
+      const labels = {
+        'comida': '🍔 Comida',
+        'transporte': '🚗 Transporte',
+        'alojamiento': '🏨 Alojamiento',
+        'combustible': '⛽ Combustible',
+        'peajes': '🛣️ Peajes',
+        'materiales': '🔧 Materiales',
+        'servicios': '📞 Servicios',
+        'otros': '📦 Otros'
+      };
+      return labels[type] || type;
+    };
+
+    function openExpenseItemModal() {
+      state.currentExpenseItem = {
+        id: 'temp-' + Date.now(),
+        type: '',
+        amount: 0,
+        description: '',
+        receipt: null
+      };
+      state.expenseItemImage = null;
+      elements.expenseItemType.value = '';
+      elements.expenseItemAmount.value = '';
+      elements.expenseItemDescription.value = '';
+      elements.expenseItemPreviewContainer.classList.add('hidden');
+      elements.expenseItemDeviceArea.classList.remove('hidden');
+      elements.expenseItemCameraArea.classList.add('hidden');
+      elements.expenseItemModal.classList.remove('hidden');
+    }
+
+    function closeExpenseItemModal() {
+      elements.expenseItemModal.classList.add('hidden');
+    }
+
+    function renderCurrentExpenseItems() {
+      if (state.currentExpenseItems.length === 0) {
+        elements.expensesList.innerHTML = '<p class="text-xs sm:text-sm text-slate-600 italic text-center py-8">No hay gastos añadidos aún</p>';
+        elements.expensesTotal.textContent = 'Total: $0.00';
+        return;
+      }
+      const total = state.currentExpenseItems.reduce((sum, item) => sum + item.amount, 0);
+      elements.expensesTotal.textContent = `Total: $${total.toFixed(2)}`;
+      elements.expensesList.innerHTML = state.currentExpenseItems.map((item, index) => `
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-md">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">${getExpenseTypeLabel(item.type).split(' ')[0]}</span>
+                <span class="text-base font-semibold text-slate-800">${getExpenseTypeLabel(item.type).split(' ').slice(1).join(' ')}</span>
+              </div>
+              <p class="text-sm text-slate-600 mt-2">${item.description || 'Sin descripción'}</p>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+              <span class="text-lg font-bold text-emerald-600">$${item.amount.toFixed(2)}</span>
+              <button onclick="removeCurrentExpenseItem(${index})" class="text-slate-500 hover:text-red-600 p-2 rounded-full hover:bg-red-50 active:bg-red-100">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.removeCurrentExpenseItem = (index) => {
+      state.currentExpenseItems.splice(index, 1);
+      renderCurrentExpenseItems();
+    };
+
+    function confirmExpenseItem() {
+      const type = elements.expenseItemType.value;
+      const amount = parseFloat(elements.expenseItemAmount.value);
+      const description = elements.expenseItemDescription.value;
+      if (!type || !amount || isNaN(amount)) {
+        showToast('Por favor completa tipo y monto', 'error');
+        return;
+      }
+      state.currentExpenseItem.type = type;
+      state.currentExpenseItem.amount = amount;
+      state.currentExpenseItem.description = description;
+      state.currentExpenseItem.id = 'item-' + Date.now();
+      if (state.expenseItemImage) {
+        state.currentExpenseItem.receipt = state.expenseItemImage;
+      }
+      state.currentExpenseItems.push({ ...state.currentExpenseItem });
+      renderCurrentExpenseItems();
+      closeExpenseItemModal();
+    }
+
+    function handleExpenseItemFileSelected(file) {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        state.expenseItemImage = e.target.result;
+        state.currentExpenseItem.receipt = e.target.result;
+        elements.expenseItemPreviewImg.src = e.target.result;
+        elements.expenseItemPreviewContainer.classList.remove('hidden');
+        elements.expenseItemDeviceArea.classList.add('hidden');
+        elements.expenseItemCameraArea.classList.add('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeExpenseItemImage() {
+      state.expenseItemImage = null;
+      state.currentExpenseItem.receipt = null;
+      elements.expenseItemPreviewContainer.classList.add('hidden');
+      elements.expenseItemDeviceArea.classList.remove('hidden');
+    }
+
+    async function saveExpenseReport() {
+      const date = elements.expenseReportDate.value;
+      if (!date) {
+        showToast('Por favor selecciona la fecha del reporte', 'error');
+        return;
+      }
+      if (state.currentExpenseItems.length === 0) {
+        showToast('Por favor añade al menos un gasto', 'error');
+        return;
+      }
+      if (state.isSaving) return;
+      state.isSaving = true;
+      elements.btnSaveExpenseReport.disabled = true;
+      elements.btnSaveExpenseReport.innerHTML = '<svg class="w-5 h-5 animate-spin-custom" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> Guardando...';
+      addLog('Expenses', 'Iniciando guardado de reporte...', 'INFO');
+      try {
+        const itemsWithReceipts = await Promise.all(state.currentExpenseItems.map(async (item) => {
+          if (!item.receipt) return item;
+          const base64Data = item.receipt.split(',')[1];
+          const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
+          const { data, error } = await appSupabase.storage.from('expense-receipts').upload(fileName, Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)), { contentType: 'image/jpeg', cacheControl: '3600', upsert: false });
+          if (error) throw error;
+          const { data: { publicUrl } } = appSupabase.storage.from('expense-receipts').getPublicUrl(data.path);
+          return { ...item, receiptUrl: publicUrl, receipt: null };
+        }));
+        const total = itemsWithReceipts.reduce((sum, item) => sum + item.amount, 0);
+        const { data: reportData, error: reportError } = await appSupabase.from('expense_reports').insert({
+          report_date: date,
+          items: itemsWithReceipts,
+          total: total,
+          created_at: new Date().toISOString()
+        }).select();
+        if (reportError) throw reportError;
+        const newReport = reportData[0];
+        state.expenseReports.unshift(newReport);
+        renderExpenseReports();
+        state.currentExpenseItems = [];
+        elements.expenseReportDate.value = new Date().toISOString().split('T')[0];
+        renderCurrentExpenseItems();
+        showToast('¡Reporte guardado exitosamente!', 'success');
+        addLog('Expenses', 'Reporte guardado exitosamente', 'SUCCESS');
+      } catch (error) {
+        showToast(`Error al guardar: ${error.message}`, 'error');
+        addLog('Expenses', `Error: ${error.message}`, 'ERROR');
+      } finally {
+        state.isSaving = false;
+        elements.btnSaveExpenseReport.disabled = false;
+        elements.btnSaveExpenseReport.innerHTML = '💾 Guardar Reporte Completo';
+      }
+    }
+
+    function renderExpenseReports() {
+      if (state.expenseReports.length === 0) {
+        elements.noItems.classList.remove('hidden');
+        elements.itemsContainer.classList.add('hidden');
+        return;
+      }
+      elements.noItems.classList.add('hidden');
+      elements.itemsContainer.classList.remove('hidden');
+      elements.itemsContainer.innerHTML = state.expenseReports.map(report => `
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 hover:border-purple-300 transition-all hover:shadow-xl hover:shadow-purple-100/50">
+          <div class="flex justify-between items-start gap-3">
+            <div class="min-w-0">
+              <span class="text-[10px] text-purple-700 bg-gradient-to-r from-purple-100 to-violet-100 px-3 py-0.5 rounded-full font-semibold font-mono">Reporte de Gastos</span>
+              <h4 class="text-sm font-bold text-slate-800 mt-2">Fecha: ${new Date(report.report_date).toLocaleDateString('es-ES')}</h4>
+              <p class="text-xs text-slate-600 mt-1">${report.items.length} gastos</p>
+            </div>
+            <div class="text-right">
+              <span class="text-lg font-bold text-emerald-600">$${report.total.toFixed(2)}</span>
+              <button onclick="deleteExpenseReport('${report.id}')" class="text-slate-500 hover:text-red-600 transition-colors p-1.5 rounded-xl hover:bg-red-50 block ml-auto">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-200 flex items-center justify-between gap-2 text-xs">
+            <span class="text-slate-500">Creado: ${new Date(report.created_at).toLocaleDateString('es-ES')}</span>
+            <div class="flex gap-2">
+              <button onclick="viewExpenseReport('${report.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-3 rounded-xl border border-slate-300 flex items-center gap-1.5 font-semibold transition-all">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" />
+                </svg>
+                Ver
+              </button>
+              <button onclick="copyExpenseReportLink('${report.id}')" class="bg-gradient-to-r from-purple-100 to-violet-100 hover:from-purple-600 hover:to-violet-600 text-purple-700 hover:text-white py-2 px-3 rounded-xl flex items-center gap-1.5 font-semibold transition-all">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+                Compartir
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.viewExpenseReport = (id) => {
+      state.selectedReportId = id;
+      state.activeView = 'client';
+      showClientView();
+      loadExpenseReportDetail(id);
+    };
+
+    window.copyExpenseReportLink = (reportId) => {
+      const link = `${window.location.origin}${window.location.pathname}?reporteId=${reportId}`;
+      const tempInput = document.createElement('input');
+      tempInput.value = link;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      showToast('¡Enlace único copiado!');
+      addLog('Expenses', 'Enlace compartido copiado', 'SUCCESS');
+    };
+
+    window.deleteExpenseReport = async (reportId) => {
+      try {
+        const { error } = await appSupabase.from('expense_reports').delete().eq('id', reportId);
+        if (error) throw error;
+        state.expenseReports = state.expenseReports.filter(r => r.id !== reportId);
+        renderExpenseReports();
+        showToast('Reporte eliminado correctamente');
+        addLog('Expenses', 'Reporte eliminado', 'SUCCESS');
+      } catch (error) {
+        showToast('Error al eliminar', 'error');
+        addLog('Expenses', `Error al eliminar: ${error.message}`, 'ERROR');
+      }
+    };
+
+    function toggleView() {
+      if (state.activeView === 'create') {
+        state.activeView = 'history';
+        elements.btnToggleText.textContent = 'Nuevo Reporte';
+        elements.createView.classList.add('hidden');
+        elements.historyView.classList.remove('hidden');
+        elements.clientView.classList.add('hidden');
+      } else if (state.activeView === 'history') {
+        state.activeView = 'create';
+        elements.btnToggleText.textContent = 'Ver Historial';
+        elements.createView.classList.remove('hidden');
+        elements.historyView.classList.add('hidden');
+        elements.clientView.classList.add('hidden');
+      } else {
+        state.activeView = 'history';
+        elements.btnToggleText.textContent = 'Nuevo Reporte';
+        elements.createView.classList.add('hidden');
+        elements.historyView.classList.remove('hidden');
+        elements.clientView.classList.add('hidden');
+      }
+    }
+
+    function showClientView() {
+      elements.createView.classList.add('hidden');
+      elements.historyView.classList.add('hidden');
+      elements.clientView.classList.remove('hidden');
+      elements.btnToggleText.textContent = 'Volver';
+    }
+
+    async function loadExpenseReportDetail(id) {
+      elements.expenseReportLoading.classList.remove('hidden');
+      elements.expenseReportContent.classList.add('hidden');
+      elements.expenseReportNotFound.classList.add('hidden');
+      elements.expenseReportMeta.classList.add('hidden');
+      elements.expenseReportId.textContent = id;
+      addLog('Expenses', `Cargando reporte ${id}...`, 'INFO');
+      try {
+        const { data, error } = await appSupabase.from('expense_reports').select('*').eq('id', id).single();
+        if (error) throw error;
+        if (data) {
+          renderExpenseReportDetail(data);
+        } else {
+          elements.expenseReportLoading.classList.add('hidden');
+          elements.expenseReportNotFound.classList.remove('hidden');
+          addLog('Expenses', 'Reporte no encontrado', 'ERROR');
+        }
+      } catch (error) {
+        elements.expenseReportLoading.classList.add('hidden');
+        elements.expenseReportNotFound.classList.remove('hidden');
+        addLog('Expenses', `Error al cargar: ${error.message}`, 'ERROR');
+      }
+    }
+
+    function renderExpenseReportDetail(report) {
+      elements.expenseReportLoading.classList.add('hidden');
+      elements.expenseReportContent.classList.remove('hidden');
+      elements.expenseReportMeta.classList.remove('hidden');
+      elements.expenseReportDateText.textContent = new Date(report.report_date).toLocaleDateString('es-ES');
+      elements.expenseReportTotalText.textContent = `$${report.total.toFixed(2)}`;
+      elements.expenseReportItems.innerHTML = report.items.map(item => `
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-md">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">${getExpenseTypeLabel(item.type).split(' ')[0]}</span>
+                <span class="text-base font-semibold text-slate-800">${getExpenseTypeLabel(item.type).split(' ').slice(1).join(' ')}</span>
+              </div>
+              <p class="text-sm text-slate-600 mt-2">${item.description || 'Sin descripción'}</p>
+            </div>
+            <div class="text-right">
+              <span class="text-lg font-bold text-emerald-600">$${item.amount.toFixed(2)}</span>
+            </div>
+          </div>
+          ${item.receiptUrl ? `
+            <div class="mt-3">
+              <img src="${item.receiptUrl}" alt="Factura" class="w-full max-h-64 object-contain rounded-xl border border-slate-200 cursor-pointer" onclick="openLightbox('${item.receiptUrl}')" />
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+      addLog('Expenses', 'Reporte cargado exitosamente', 'SUCCESS');
+    }
+
+    window.openLightbox = (url) => {
+      elements.lightboxImg.src = url;
+      elements.lightbox.classList.remove('hidden');
+    };
+
+    function toggleCredentials() {
+      state.credentialsVisible = !state.credentialsVisible;
+      if (state.credentialsVisible) {
+        elements.realModeConfig.classList.remove('hidden');
+        elements.supabaseUrlInput.value = state.supabaseUrl;
+        elements.supabaseKeyInput.value = state.supabaseKey;
+      } else {
+        elements.realModeConfig.classList.add('hidden');
+      }
+    }
+
+    function saveCredentials() {
+      state.supabaseUrl = elements.supabaseUrlInput.value.trim();
+      state.supabaseKey = elements.supabaseKeyInput.value.trim();
+      localStorage.setItem('supabase_url', state.supabaseUrl);
+      localStorage.setItem('supabase_key', state.supabaseKey);
+      appSupabase = window.supabase.createClient(state.supabaseUrl, state.supabaseKey);
+      showToast('¡Credenciales guardadas exitosamente!', 'success');
+      addLog('Credentials', 'Credenciales guardadas', 'SUCCESS');
+      autoConnectSupabase();
+    }
+
+    async function testConnection() {
+      const url = elements.supabaseUrlInput.value.trim();
+      const key = elements.supabaseKeyInput.value.trim();
+      if (!url || !key) {
+        showToast('Por favor completa ambos campos', 'error');
+        return;
+      }
+      addLog('Supabase', 'Probando conexión...', 'INFO');
+      try {
+        const testClient = window.supabase.createClient(url, key);
+        const { data, error } = await testClient.from('expense_reports').select('count', { count: 'exact', head: true });
+        if (error) throw error;
+        state.supabaseUrl = url;
+        state.supabaseKey = key;
+        localStorage.setItem('supabase_url', state.supabaseUrl);
+        localStorage.setItem('supabase_key', state.supabaseKey);
+        appSupabase = testClient;
+        updateConnectionStatus('connected');
+        showToast('¡Conexión exitosa!', 'success');
+        addLog('Supabase', 'Conexión verificada', 'SUCCESS');
+        loadExpenseReports();
+      } catch (error) {
+        updateConnectionStatus('disconnected', error.message);
+        showToast(`Error de conexión: ${error.message}`, 'error');
+        addLog('Supabase', `Error: ${error.message}`, 'ERROR');
+      }
+    }
+
+    let scannerStream = null;
+
+    async function openScanner() {
+      try {
+        scannerStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+        });
+        elements.scannerVideo.srcObject = scannerStream;
+        elements.scannerModal.classList.remove('hidden');
+      } catch (error) {
+        showToast('Error al acceder a la cámara', 'error');
+        addLog('Scanner', `Error: ${error.message}`, 'ERROR');
+      }
+    }
+
+    function closeScanner() {
+      if (scannerStream) {
+        scannerStream.getTracks().forEach(track => track.stop());
+        scannerStream = null;
+      }
+      elements.scannerModal.classList.add('hidden');
+    }
+
+    function captureFromScanner() {
+      const video = elements.scannerVideo;
+      const canvas = elements.scannerCanvas;
+      const ctx = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const previewCtx = elements.previewCanvas.getContext('2d');
+      elements.previewCanvas.width = canvas.width;
+      elements.previewCanvas.height = canvas.height;
+      previewCtx.drawImage(canvas, 0, 0);
+      elements.scannerPreviewModal.classList.remove('hidden');
+    }
+
+    function saveScannerImage() {
+      const canvas = elements.previewCanvas;
+      const base64Image = canvas.toDataURL('image/jpeg', 0.95);
+      state.expenseItemImage = base64Image;
+      state.currentExpenseItem.receipt = base64Image;
+      elements.expenseItemPreviewImg.src = base64Image;
+      elements.expenseItemPreviewContainer.classList.remove('hidden');
+      elements.expenseItemDeviceArea.classList.add('hidden');
+      elements.expenseItemCameraArea.classList.add('hidden');
+      elements.scannerPreviewModal.classList.add('hidden');
+      closeScanner();
+    }
+
+    function init() {
+      elements.year.textContent = new Date().getFullYear();
+      elements.expenseReportDate.value = new Date().toISOString().split('T')[0];
+      elements.btnToggleView.addEventListener('click', toggleView);
+      elements.btnToggleCredentials.addEventListener('click', toggleCredentials);
+      elements.btnSaveCredentials.addEventListener('click', saveCredentials);
+      elements.btnTestConnection.addEventListener('click', testConnection);
+      elements.btnClearLogs.addEventListener('click', () => { state.logs = []; renderLogs(); });
+      elements.lightbox.addEventListener('click', () => elements.lightbox.classList.add('hidden'));
+      
+      elements.btnAddExpenseItem.addEventListener('click', openExpenseItemModal);
+      elements.btnCloseExpenseModal.addEventListener('click', closeExpenseItemModal);
+      elements.btnCancelExpenseItem.addEventListener('click', closeExpenseItemModal);
+      elements.btnConfirmExpenseItem.addEventListener('click', confirmExpenseItem);
+      elements.btnSaveExpenseReport.addEventListener('click', saveExpenseReport);
+      
+      elements.expenseItemBtnDevice.addEventListener('click', () => {
+        state.expenseItemImageSource = 'device';
+        elements.expenseItemBtnDevice.classList.add('bg-gradient-to-r', 'from-purple-500', 'to-violet-600', 'text-white');
+        elements.expenseItemBtnDevice.classList.remove('text-slate-500');
+        elements.expenseItemBtnCamera.classList.remove('bg-gradient-to-r', 'from-purple-500', 'to-violet-600', 'text-white');
+        elements.expenseItemBtnCamera.classList.add('text-slate-500');
+        elements.expenseItemDeviceArea.classList.remove('hidden');
+        elements.expenseItemCameraArea.classList.add('hidden');
+      });
+      elements.expenseItemBtnCamera.addEventListener('click', () => {
+        state.expenseItemImageSource = 'camera';
+        elements.expenseItemBtnCamera.classList.add('bg-gradient-to-r', 'from-purple-500', 'to-violet-600', 'text-white');
+        elements.expenseItemBtnCamera.classList.remove('text-slate-500');
+        elements.expenseItemBtnDevice.classList.remove('bg-gradient-to-r', 'from-purple-500', 'to-violet-600', 'text-white');
+        elements.expenseItemBtnDevice.classList.add('text-slate-500');
+        elements.expenseItemCameraArea.classList.remove('hidden');
+        elements.expenseItemDeviceArea.classList.add('hidden');
+      });
+      elements.expenseItemFileDrop.addEventListener('click', () => elements.expenseItemFileInput.click());
+      elements.expenseItemFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          handleExpenseItemFileSelected(e.target.files[0]);
+        }
+      });
+      elements.expenseItemBtnRemove.addEventListener('click', removeExpenseItemImage);
+      elements.expenseItemBtnStartScanner.addEventListener('click', openScanner);
+      
+      elements.scannerBtnClose.addEventListener('click', closeScanner);
+      elements.scannerBtnCancel.addEventListener('click', closeScanner);
+      elements.scannerBtnCapture.addEventListener('click', captureFromScanner);
+      elements.scannerBtnGallery.addEventListener('click', () => elements.scannerFileInput.click());
+      elements.scannerFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+              const ctx = elements.previewCanvas.getContext('2d');
+              elements.previewCanvas.width = img.width;
+              elements.previewCanvas.height = img.height;
+              ctx.drawImage(img, 0, 0);
+              elements.scannerPreviewModal.classList.remove('hidden');
+            };
+            img.src = event.target.result;
+          };
+          reader.readAsDataURL(e.target.files[0]);
+        }
+      });
+      elements.previewBtnRetake.addEventListener('click', () => elements.scannerPreviewModal.classList.add('hidden'));
+      elements.previewBtnSave.addEventListener('click', saveScannerImage);
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const reporteId = urlParams.get('reporteId');
+      const accion = urlParams.get('accion');
+      if (reporteId) {
+        state.selectedReportId = reporteId;
+        state.activeView = 'client';
+        showClientView();
+        loadExpenseReportDetail(reporteId);
+      } else if (accion === 'historial') {
+        toggleView();
+      }
+
+      autoConnectSupabase();
+    }
+
+    init();
+  </script>
+</body>
+</html>
+  `;
+    }
+  }
+}

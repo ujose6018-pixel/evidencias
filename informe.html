@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+  <meta name="theme-color" content="#10b981">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.json">
+  <title>Informes Técnicos - Workspace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-pulse-custom { animation: pulse 1s infinite; }
+    .animate-spin-custom { animation: spin 1s linear infinite; }
+    .glass {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+    }
+    button, input, select, textarea {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    input[type="date"], input[type="number"], select, textarea {
+      font-size: 16px;
+    }
+    @media screen and (-webkit-min-device-pixel-ratio: 0) {
+      select, textarea, input {
+        font-size: 16px;
+      }
+    }
+    @supports (padding-top: env(safe-area-inset-top)) {
+      body {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-violet-50 text-slate-800 font-sans">
+  
+  <div id="toast" class="fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-xl flex items-center gap-3 border border-white/30 bg-white/95 text-slate-800 hidden transition-all duration-300"></div>
+
+  <div id="lightbox" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out hidden">
+    <img id="lightbox-img" class="max-h-[90vh] max-w-full rounded-3xl shadow-2xl object-contain" alt="Evidencia Ampliada" />
+    <div class="absolute bottom-6 glass px-5 py-3 rounded-full text-sm text-slate-700 font-medium shadow-lg border border-white/30">
+      Toca cualquier punto para cerrar la vista
+    </div>
+  </div>
+
+  <div id="scanner-modal" class="fixed inset-0 z-[60] bg-slate-900 flex flex-col hidden">
+    <div class="flex items-center justify-between p-4 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 z-10">
+      <button id="scanner-btn-close" class="p-3 rounded-full bg-slate-800 hover:bg-slate-700 text-white transition-all">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <h3 class="text-white font-bold text-lg">Escáner de Documentos</h3>
+      <button id="scanner-btn-flip" class="p-3 rounded-full bg-slate-800 hover:bg-slate-700 text-white transition-all">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
+    </div>
+    <div class="relative flex-1 flex items-center justify-center bg-black overflow-hidden">
+      <video id="scanner-video" autoplay playsinline class="w-full h-full object-cover"></video>
+      <canvas id="scanner-canvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+      <div id="scanner-overlay" class="absolute inset-0 pointer-events-none">
+        <svg id="scanner-corners" class="absolute inset-0 w-full h-full"></svg>
+        <div id="scanner-guide" class="absolute inset-8 border-2 border-dashed border-white/50 rounded-2xl"></div>
+      </div>
+    </div>
+    <div class="bg-slate-900/95 backdrop-blur-md p-6 border-t border-slate-800">
+      <div class="flex items-center justify-center gap-6">
+        <button id="scanner-btn-gallery" class="flex flex-col items-center gap-2 p-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all">
+          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span class="text-xs font-semibold">Galería</span>
+        </button>
+        <input type="file" id="scanner-file-input" accept="image/*" class="hidden">
+        <button id="scanner-btn-capture" class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 flex items-center justify-center border-4 border-white shadow-2xl transition-all hover:scale-105 active:scale-95">
+          <div class="w-8 h-8 rounded-full bg-white"></div>
+        </button>
+        <button id="scanner-btn-cancel" class="flex flex-col items-center gap-2 p-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all">
+          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <span class="text-xs font-semibold">Cancelar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="scanner-preview-modal" class="fixed inset-0 z-[60] bg-slate-900 flex flex-col hidden">
+    <div class="flex items-center justify-between p-4 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 z-10">
+      <button id="preview-btn-retake" class="p-3 rounded-full bg-slate-800 hover:bg-slate-700 text-white transition-all">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+        </svg>
+      </button>
+      <h3 class="text-white font-bold text-lg">Ajustar Escaneo</h3>
+      <div class="w-12"></div>
+    </div>
+    <div class="relative flex-1 flex items-center justify-center bg-slate-800 overflow-hidden p-4">
+      <canvas id="preview-canvas" class="max-w-full max-h-full rounded-xl shadow-2xl"></canvas>
+    </div>
+    <div class="bg-slate-900/95 backdrop-blur-md p-6 border-t border-slate-800">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex gap-2">
+          <button id="preview-btn-color" class="px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-semibold border border-slate-700">Color</button>
+          <button id="preview-btn-gray" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-400 text-sm font-semibold border border-slate-800 hover:text-white">Gris</button>
+          <button id="preview-btn-bw" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-400 text-sm font-semibold border border-slate-800 hover:text-white">B/N</button>
+        </div>
+        <button id="preview-btn-enhance" class="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold">Mejorar</button>
+      </div>
+      <div class="flex items-center justify-center gap-4">
+        <button id="preview-btn-save" class="flex-1 py-4 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white active:scale-[0.98]">
+          ✅ Guardar Escaneo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="glass border-b border-white/50 px-4 py-4 sticky top-0 z-40 shadow-xl">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="p-2 rounded-xl hover:bg-white/50 transition-all">
+          <svg class="w-6 h-6 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </a>
+        <div class="flex items-center gap-3">
+          <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl shadow-lg">
+            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-lg font-extrabold text-slate-800" id="page-title">Informes Técnicos</h1>
+            <p class="text-xs text-slate-500" id="page-subtitle">Gestión de informes técnicos</p>
+          </div>
+        </div>
+      </div>
+      <button id="btn-toggle-view" class="glass hover:bg-white border border-slate-200 text-slate-700 text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+        <span id="btn-toggle-text">Ver Historial</span>
+      </button>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto p-4 lg:p-6">
+    
+    <div id="create-view" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="lg:col-span-7 flex flex-col gap-6">
+        <div id="connection-status" class="bg-white border border-slate-200 p-5 rounded-3xl shadow-xl shadow-slate-200/50">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div id="connection-indicator" class="w-4 h-4 rounded-full bg-slate-400"></div>
+              <div>
+                <span id="connection-status-text" class="text-base font-semibold text-slate-700">Conectando...</span>
+                <p id="connection-error" class="text-sm text-slate-500 mt-1">Verificando conexión con Supabase</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <button id="btn-toggle-credentials" class="glass border border-slate-300 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition-all hover:bg-white hover:shadow-md">
+                ⚙️ Configurar Credenciales
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="real-mode-config" class="bg-white backdrop-blur-xl border border-slate-200 rounded-3xl p-7 shadow-xl shadow-slate-200/50 space-y-5 hidden">
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            🔑 Configuración de Supabase
+          </h2>
+          <div class="grid grid-cols-1 gap-5 text-sm">
+            <div>
+              <label class="block text-slate-600 font-semibold mb-2">Supabase Project URL</label>
+              <input id="supabase-url" type="text" placeholder="https://tu-proyecto.supabase.co" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono" />
+            </div>
+            <div>
+              <label class="block text-slate-600 font-semibold mb-2">Supabase Public Key (anon)</label>
+              <input id="supabase-key" type="password" placeholder="sb_publishable_..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono" />
+            </div>
+            <div class="flex gap-3">
+              <button id="btn-save-credentials" class="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-sm font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-blue-500/30 active:scale-[0.98]">
+                💾 Guardar Credenciales
+              </button>
+              <button id="btn-test-connection" class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-sm font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-emerald-500/30 active:scale-[0.98]">
+                🔍 Verificar Conexión
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="section-technical" class="bg-white backdrop-blur-xl border border-slate-200 rounded-3xl p-7 shadow-xl shadow-slate-200/50 space-y-6">
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            📝 Nuevo Informe Técnico
+          </h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm">
+            <div>
+              <label class="block text-slate-600 font-semibold mb-2">Nombre del Cliente / Razón Social</label>
+              <input id="client-name" type="text" placeholder="Ej. Condominio San Ignacio" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" />
+            </div>
+            <div>
+              <label class="block text-slate-600 font-semibold mb-2">Título de la Tarea / Obra</label>
+              <input id="project-title" type="text" placeholder="Ej. Saneamiento y Pintado de Tuberías" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" />
+            </div>
+          </div>
+
+          <div class="text-sm">
+            <label class="block text-slate-600 font-semibold mb-2">Cuerpo / Descripción del Informe</label>
+            <textarea id="report-text" rows="4" placeholder="Describe de forma cronológica las tareas realizadas, reparaciones hechas, materiales usados..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"></textarea>
+          </div>
+
+          <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+            <div class="bg-slate-50 px-4 py-4 border-b border-slate-200 flex items-center justify-between">
+              <span class="text-sm font-bold text-slate-700">Evidencia Fotográfica</span>
+              <div class="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs">
+                <button id="btn-device" type="button" class="px-4 py-2 rounded-lg font-semibold transition bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                  📁 Galería
+                </button>
+                <button id="btn-camera" type="button" class="px-4 py-2 rounded-lg font-semibold transition text-slate-600">
+                  📷 Cámara
+                </button>
+              </div>
+            </div>
+            <div class="p-5">
+              <div id="device-area">
+                <div id="file-drop" class="border-2 border-dashed border-slate-300 rounded-2xl py-10 px-5 text-center hover:border-blue-500 bg-slate-50 cursor-pointer transition-all duration-300 flex flex-col items-center justify-center hover:bg-blue-50 active:border-blue-400 active:bg-blue-100">
+                  <input id="file-input" type="file" multiple accept="image/*" class="hidden" />
+                  <svg class="w-12 h-12 text-slate-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  <p class="text-base font-semibold text-slate-700 mt-2">Buscar fotos en el almacenamiento</p>
+                  <p class="text-xs text-slate-500 mt-2">Soporta múltiples archivos JPG, PNG, WEBP</p>
+                </div>
+              </div>
+              <div id="camera-area" class="hidden">
+                <div id="flash" class="absolute inset-0 bg-white z-20 hidden"></div>
+                <div id="camera-off" class="w-full aspect-video flex flex-col items-center justify-center p-8 text-center bg-slate-100 rounded-2xl border border-slate-200">
+                  <svg class="w-12 h-12 text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812-1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <p class="text-sm font-semibold text-slate-700 mt-3">La cámara está desactivada</p>
+                  <p id="camera-error" class="text-[11px] text-red-500 mt-2 max-w-xs hidden"></p>
+                  <button id="btn-start-camera" type="button" class="mt-4 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg">
+                    Activar Lente (Full HD)
+                  </button>
+                </div>
+                <div id="camera-on" class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center hidden">
+                  <video id="video" autoplay playsinline class="w-full h-full object-cover"></video>
+                  <div class="absolute bottom-5 inset-x-0 flex items-center justify-center gap-5 z-10 px-5">
+                    <button id="btn-switch-camera" type="button" class="glass hover:bg-slate-800 text-white p-3.5 rounded-full border border-slate-700 transition-all hover:scale-110" title="Girar cámara">
+                      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 15H19" />
+                      </svg>
+                    </button>
+                    <button id="btn-capture" type="button" class="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 active:scale-90 text-white w-14 h-14 rounded-full border-4 border-white/90 flex items-center justify-center shadow-2xl transition-all hover:shadow-red-500/40">
+                      <div class="w-5 h-5 rounded-full bg-white"></div>
+                    </button>
+                    <button id="btn-stop-camera" type="button" class="glass hover:bg-slate-800 text-red-400 text-sm py-2 px-4 rounded-full border border-slate-700 transition-all font-bold">
+                      Apagar
+                    </button>
+                  </div>
+                </div>
+                <canvas id="canvas" class="hidden"></canvas>
+              </div>
+            </div>
+            <div id="images-container" class="px-4 pb-4 hidden">
+              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Fotos Adjuntas (<span id="images-count">0</span>)</p>
+              <div id="images-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3"></div>
+            </div>
+          </div>
+
+          <button id="btn-upload" class="w-full py-3.5 rounded-2xl font-bold text-sm shadow-xl transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white hover:shadow-indigo-500/30">
+            💾 Guardar y Generar Enlace Único
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="history-view" class="hidden">
+      <div class="bg-white backdrop-blur-xl border border-slate-200 rounded-3xl p-6 shadow-xl shadow-slate-200/50 flex flex-col min-h-[600px]">
+        <div class="mb-4">
+          <h2 class="text-lg font-bold text-slate-800">
+            📁 Historial de Informes Registrados
+          </h2>
+          <p class="text-sm text-slate-500 mt-1">Listado de informes guardados</p>
+        </div>
+        <div id="no-items" class="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-500">
+          <svg class="w-12 h-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          </svg>
+          <p class="text-lg font-semibold mt-4 text-slate-700">No tienes informes guardados</p>
+          <p class="text-sm text-slate-500 max-w-[200px] mt-2">Crea tu primer informe técnico para empezar.</p>
+        </div>
+        <div id="items-container" class="space-y-3 flex-1 overflow-y-auto max-h-[500px] pr-2 hidden"></div>
+      </div>
+    </div>
+
+    <div id="client-view" class="hidden">
+      <div class="max-w-4xl mx-auto bg-white backdrop-blur-xl rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
+        <div class="bg-gradient-to-r from-emerald-50 via-blue-50 to-violet-50 p-6 md:p-8 border-b border-slate-200">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="text-xs uppercase font-mono tracking-wider text-emerald-600 font-bold">Informe Técnico</span>
+              </div>
+              <h2 id="client-project-title" class="text-xl md:text-2xl font-bold text-slate-800 mt-3"></h2>
+            </div>
+            <div class="text-left sm:text-right">
+              <p class="text-xs text-slate-600 font-mono">ID de Proyecto:</p>
+              <p id="client-project-id" class="text-xs text-slate-500 font-mono truncate max-w-[180px]"></p>
+            </div>
+          </div>
+          <div id="client-meta" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-5 border-t border-slate-200 text-sm hidden">
+            <div class="flex items-center gap-2 text-slate-700">
+              <span>Empresa/Cliente:</span>
+              <strong id="client-name-text" class="text-slate-800"></strong>
+            </div>
+            <div class="flex items-center gap-2 text-slate-700 sm:justify-end">
+              <span>Fecha de Emisión:</span>
+              <strong id="client-date" class="text-slate-800"></strong>
+            </div>
+          </div>
+        </div>
+        <div id="client-loading" class="p-12 text-center text-slate-600 flex flex-col items-center justify-center gap-3">
+          <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin-custom"></div>
+          <p class="text-sm font-semibold text-slate-700">Cargando datos...</p>
+        </div>
+        <div id="client-content" class="p-6 md:p-8 space-y-6 hidden">
+          <div class="flex flex-wrap gap-3">
+            <button id="btn-export-pdf" class="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-sm font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-blue-500/30 active:scale-[0.98]">
+              📄 Exportar a PDF
+            </button>
+            <button id="btn-export-word" class="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-sm font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-emerald-500/30 active:scale-[0.98]">
+              📝 Exportar a Word
+            </button>
+            <button id="btn-export-txt" class="flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white text-sm font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-violet-500/30 active:scale-[0.98]">
+              📋 Exportar a TXT
+            </button>
+          </div>
+          <div class="space-y-3">
+            <h3 class="text-xs uppercase font-mono tracking-wider text-slate-600 font-bold border-b border-slate-200 pb-3 flex items-center gap-2">
+              <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Resumen Escrito del Servicio
+            </h3>
+            <div id="client-report" class="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-sm leading-relaxed text-slate-800 whitespace-pre-wrap"></div>
+          </div>
+          <div class="space-y-3">
+            <h3 class="text-xs uppercase font-mono tracking-wider text-slate-600 font-bold border-b border-slate-200 pb-3">
+              🖼️ Evidencias Fotográficas Adjuntas
+            </h3>
+            <div id="client-photos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4"></div>
+          </div>
+        </div>
+        <div id="client-not-found" class="p-12 text-center text-slate-500 hidden">
+          <p class="text-sm font-semibold">No se encontraron datos del proyecto.</p>
+        </div>
+        <div class="bg-slate-50 p-6 text-center border-t border-slate-200 text-xs text-slate-600">
+          <p>© <span id="year"></span> Portal Técnico Integrado.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-white/80 backdrop-blur-xl border-t border-slate-200 p-4 shadow-xl shadow-slate-200/30 mt-8">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-xs font-bold tracking-wider text-slate-600 uppercase font-mono">
+          📟 Consola del Sistema
+        </h3>
+        <button id="btn-clear-logs" class="text-slate-600 hover:text-slate-800 text-xs font-semibold transition-colors">
+          Limpiar Logs
+        </button>
+      </div>
+      <div id="logs-container" class="bg-slate-50 border border-slate-200 rounded-2xl p-4 font-mono text-xs text-slate-700 h-28 overflow-y-auto space-y-2">
+        <p class="text-slate-500 italic">Consola inactiva.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let appSupabase = null;
+    const state = {
+      activeView: 'create',
+      projects: [],
+      selectedProjectId: null,
+      supabaseUrl: localStorage.getItem('supabase_url') || 'https://snqfoqslgxelisezeqqc.supabase.co',
+      supabaseKey: localStorage.getItem('supabase_key') || 'sb_publishable_-YUywAvjOPQ23akv61M-5g_ERpDvyS_',
+      clientName: '',
+      projectTitle: '',
+      reportText: '',
+      imageFiles: [],
+      imageSource: 'device',
+      cameraActive: false,
+      facingMode: 'environment',
+      cameraError: null,
+      flashActive: false,
+      isUploading: false,
+      logs: [],
+      toast: null,
+      lightboxImg: null,
+      stream: null,
+      video: null,
+      canvas: null,
+      credentialsVisible: false,
+      scannerActive: false,
+      scannerFacingMode: 'environment',
+      scannerStream: null,
+      scannerContext: 'technical',
+      capturedImageData: null,
+      previewMode: 'color'
+    };
+
+    const elements = {
+      toast: document.getElementById('toast'),
+      lightbox: document.getElementById('lightbox'),
+      lightboxImg: document.getElementById('lightbox-img'),
+      connectionIndicator: document.getElementById('connection-indicator'),
+      connectionStatusText: document.getElementById('connection-status-text'),
+      connectionError: document.getElementById('connection-error'),
+      clientNameInput: document.getElementById('client-name'),
+      projectTitleInput: document.getElementById('project-title'),
+      reportTextInput: document.getElementById('report-text'),
+      btnDevice: document.getElementById('btn-device'),
+      btnCamera: document.getElementById('btn-camera'),
+      deviceArea: document.getElementById('device-area'),
+      cameraArea: document.getElementById('camera-area'),
+      fileDrop: document.getElementById('file-drop'),
+      fileInput: document.getElementById('file-input'),
+      flash: document.getElementById('flash'),
+      cameraOff: document.getElementById('camera-off'),
+      cameraOn: document.getElementById('camera-on'),
+      cameraError: document.getElementById('camera-error'),
+      btnStartCamera: document.getElementById('btn-start-camera'),
+      btnSwitchCamera: document.getElementById('btn-switch-camera'),
+      btnCapture: document.getElementById('btn-capture'),
+      btnStopCamera: document.getElementById('btn-stop-camera'),
+      video: document.getElementById('video'),
+      canvas: document.getElementById('canvas'),
+      imagesContainer: document.getElementById('images-container'),
+      imagesCount: document.getElementById('images-count'),
+      imagesGrid: document.getElementById('images-grid'),
+      btnUpload: document.getElementById('btn-upload'),
+      noItems: document.getElementById('no-items'),
+      itemsContainer: document.getElementById('items-container'),
+      realModeConfig: document.getElementById('real-mode-config'),
+      btnToggleCredentials: document.getElementById('btn-toggle-credentials'),
+      supabaseUrlInput: document.getElementById('supabase-url'),
+      supabaseKeyInput: document.getElementById('supabase-key'),
+      btnSaveCredentials: document.getElementById('btn-save-credentials'),
+      btnTestConnection: document.getElementById('btn-test-connection'),
+      logsContainer: document.getElementById('logs-container'),
+      btnClearLogs: document.getElementById('btn-clear-logs'),
+      btnToggleView: document.getElementById('btn-toggle-view'),
+      btnToggleText: document.getElementById('btn-toggle-text'),
+      createView: document.getElementById('create-view'),
+      historyView: document.getElementById('history-view'),
+      clientView: document.getElementById('client-view'),
+      clientProjectTitle: document.getElementById('client-project-title'),
+      clientProjectId: document.getElementById('client-project-id'),
+      clientMeta: document.getElementById('client-meta'),
+      clientNameText: document.getElementById('client-name-text'),
+      clientDate: document.getElementById('client-date'),
+      clientLoading: document.getElementById('client-loading'),
+      clientContent: document.getElementById('client-content'),
+      clientReport: document.getElementById('client-report'),
+      clientPhotos: document.getElementById('client-photos'),
+      clientNotFound: document.getElementById('client-not-found'),
+      year: document.getElementById('year'),
+      btnExportPdf: document.getElementById('btn-export-pdf'),
+      btnExportWord: document.getElementById('btn-export-word'),
+      btnExportTxt: document.getElementById('btn-export-txt'),
+      scannerModal: document.getElementById('scanner-modal'),
+      scannerBtnClose: document.getElementById('scanner-btn-close'),
+      scannerBtnFlip: document.getElementById('scanner-btn-flip'),
+      scannerBtnCapture: document.getElementById('scanner-btn-capture'),
+      scannerBtnGallery: document.getElementById('scanner-btn-gallery'),
+      scannerFileInput: document.getElementById('scanner-file-input'),
+      scannerBtnCancel: document.getElementById('scanner-btn-cancel'),
+      scannerVideo: document.getElementById('scanner-video'),
+      scannerCanvas: document.getElementById('scanner-canvas'),
+      scannerPreviewModal: document.getElementById('scanner-preview-modal'),
+      previewBtnRetake: document.getElementById('preview-btn-retake'),
+      previewBtnColor: document.getElementById('preview-btn-color'),
+      previewBtnGray: document.getElementById('preview-btn-gray'),
+      previewBtnBw: document.getElementById('preview-btn-bw'),
+      previewBtnEnhance: document.getElementById('preview-btn-enhance'),
+      previewBtnSave: document.getElementById('preview-btn-save'),
+      previewCanvas: document.getElementById('preview-canvas'),
+      pageTitle: document.getElementById('page-title'),
+      pageSubtitle: document.getElementById('page-subtitle')
+    };
+
+    function addLog(service, detail, type = 'INFO') {
+      const timestamp = new Date().toLocaleTimeString();
+      state.logs.unshift({ id: Date.now() + Math.random(), timestamp, service, detail, type });
+      renderLogs();
+    }
+
+    function renderLogs() {
+      if (state.logs.length === 0) {
+        elements.logsContainer.innerHTML = '<p class="text-slate-500 italic">Consola inactiva.</p>';
+        return;
+      }
+      elements.logsContainer.innerHTML = state.logs.map(log => {
+        const typeColors = {
+          'ERROR': 'bg-red-100 text-red-700',
+          'SUCCESS': 'bg-green-100 text-green-700',
+          'INFO': 'bg-blue-100 text-blue-700'
+        };
+        return `
+          <div class="border-b border-slate-200 pb-1.5 last:border-0 flex items-start gap-2">
+            <span class="text-slate-500 shrink-0">[${log.timestamp}]</span>
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 ${typeColors[type]}">${service}</span>
+            <pre class="whitespace-pre-wrap flex-1 text-slate-700 font-mono">${detail}</pre>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function showToast(message, type = 'success') {
+      const bg = type === 'error' 
+        ? 'bg-gradient-to-r from-red-500 to-orange-500 border-red-400 text-white shadow-lg shadow-red-200' 
+        : 'bg-gradient-to-r from-blue-500 to-indigo-600 border-blue-400 text-white shadow-lg shadow-blue-200';
+      const icon = type === 'error' ? '⚠️' : '✨';
+      elements.toast.innerHTML = `<span>${icon}</span><span class="text-sm font-semibold">${message}</span>`;
+      elements.toast.className = `fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-xl flex items-center gap-3 border transition-all duration-300 ${bg}`;
+      elements.toast.classList.remove('hidden');
+      setTimeout(() => elements.toast.classList.add('hidden'), 4000);
+    }
+
+    function updateConnectionStatus(status, errorMsg = '') {
+      const indicator = elements.connectionIndicator;
+      const statusText = elements.connectionStatusText;
+      const errorText = elements.connectionError;
+      
+      switch(status) {
+        case 'connected':
+          indicator.className = 'w-3 h-3 rounded-full bg-green-500 animate-pulse-custom shadow-lg shadow-green-500/40';
+          statusText.textContent = '✅ Conexión estable';
+          statusText.className = 'text-sm font-semibold text-green-700';
+          errorText.textContent = 'Todo funcionando correctamente';
+          errorText.className = 'text-xs text-green-600 mt-1';
+          break;
+        case 'missing-table':
+          indicator.className = 'w-3 h-3 rounded-full bg-orange-500 animate-pulse-custom shadow-lg shadow-orange-500/40';
+          statusText.textContent = '⚠️ Falta crear tabla';
+          statusText.className = 'text-sm font-semibold text-orange-700';
+          errorText.textContent = errorMsg || 'Crea la tabla "projects" en Supabase';
+          errorText.className = 'text-xs text-orange-600 mt-1';
+          break;
+        case 'missing-bucket':
+          indicator.className = 'w-3 h-3 rounded-full bg-orange-500 animate-pulse-custom shadow-lg shadow-orange-500/40';
+          statusText.textContent = '⚠️ Falta crear bucket';
+          statusText.className = 'text-sm font-semibold text-orange-700';
+          errorText.textContent = errorMsg || 'Crea el bucket "project-photos" en Storage';
+          errorText.className = 'text-xs text-orange-600 mt-1';
+          break;
+        case 'disconnected':
+        default:
+          indicator.className = 'w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/40';
+          statusText.textContent = '❌ Sin conexión';
+          statusText.className = 'text-sm font-semibold text-red-700';
+          errorText.textContent = errorMsg || 'Error de conexión con Supabase';
+          errorText.className = 'text-xs text-red-600 mt-1';
+          break;
+      }
+    }
+
+    async function autoConnectSupabase() {
+      addLog('Supabase', 'Conectando automáticamente...', 'INFO');
+      try {
+        appSupabase = window.supabase.createClient(state.supabaseUrl, state.supabaseKey);
+        const { data, error } = await appSupabase.from('projects').select('count', { count: 'exact', head: true });
+        if (error) {
+          if (error.message.includes('relation') && error.message.includes('does not exist')) {
+            updateConnectionStatus('missing-table', 'Falta la tabla "projects" - ve a SQL Editor en Supabase');
+            addLog('Supabase', 'ERROR: Falta crear la tabla "projects"', 'ERROR');
+          } else {
+            updateConnectionStatus('missing-table', error.message);
+            addLog('Supabase', `Error: ${error.message}`, 'ERROR');
+          }
+        } else {
+          updateConnectionStatus('connected');
+          addLog('Supabase', '¡Conectado exitosamente!', 'SUCCESS');
+          loadProjects();
+        }
+      } catch (error) {
+        updateConnectionStatus('disconnected', error.message);
+        addLog('Supabase', `Error de conexión: ${error.message}`, 'ERROR');
+      }
+    }
+
+    async function loadProjects() {
+      try {
+        const { data, error } = await appSupabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        state.projects = data || [];
+        renderProjects();
+      } catch (error) {
+        addLog('Supabase', `Error al cargar proyectos: ${error.message}`, 'ERROR');
+      }
+    }
+
+    function renderImages() {
+      if (state.imageFiles.length === 0) {
+        elements.imagesContainer.classList.add('hidden');
+        return;
+      }
+      elements.imagesContainer.classList.remove('hidden');
+      elements.imagesCount.textContent = state.imageFiles.length;
+      elements.imagesGrid.innerHTML = state.imageFiles.map((img, index) => `
+        <div class="relative aspect-square rounded-xl overflow-hidden border border-slate-300 group bg-slate-50 shadow-md">
+          <img src="${img.base64}" alt="${img.name}" class="w-full h-full object-cover" />
+          <div class="absolute top-1.5 left-1.5 bg-black/70 px-1.5 py-0.5 rounded text-[8px] text-white truncate max-w-[80%]">
+            ${img.id.startsWith('cam') ? '📷' : '📁'}
+          </div>
+          <button onclick="removeImage(${index})" class="absolute inset-0 bg-gradient-to-t from-red-600/95 to-red-500/80 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all text-xs font-bold">
+            Quitar
+          </button>
+        </div>
+      `).join('');
+    }
+
+    window.removeImage = function(index) {
+      state.imageFiles.splice(index, 1);
+      renderImages();
+    };
+
+    function renderProjects() {
+      if (state.projects.length === 0) {
+        elements.noItems.classList.remove('hidden');
+        elements.itemsContainer.classList.add('hidden');
+        return;
+      }
+      elements.noItems.classList.add('hidden');
+      elements.itemsContainer.classList.remove('hidden');
+      elements.itemsContainer.innerHTML = state.projects.map(p => `
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 hover:border-blue-300 transition-all hover:shadow-xl hover:shadow-blue-100/50">
+          <div class="flex justify-between items-start gap-3">
+            <div class="min-w-0">
+              <span class="text-[10px] text-emerald-700 bg-gradient-to-r from-emerald-100 to-teal-100 px-3 py-0.5 rounded-full font-semibold font-mono">
+                Almacenado
+              </span>
+              <h4 class="text-sm font-bold text-slate-800 mt-2 truncate">${p.project_title}</h4>
+              <p class="text-xs text-slate-600 mt-1 truncate">👤 ${p.client_name}</p>
+            </div>
+            <button onclick="deleteProject('${p.id}')" class="text-slate-500 hover:text-red-600 transition-colors p-1.5 rounded-xl hover:bg-red-50">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+          <div class="pt-2 border-t border-slate-200 flex items-center justify-between gap-2 text-xs">
+            <span class="text-slate-500">📅 ${new Date(p.created_at).toLocaleDateString('es-ES')}</span>
+            <div class="flex gap-2">
+              <button onclick="viewClient('${p.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-3 rounded-xl border border-slate-300 flex items-center gap-1.5 font-semibold transition-all">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" />
+                </svg>
+                Ver
+              </button>
+              <button onclick="copyLink('${p.id}')" class="bg-gradient-to-r from-blue-100 to-indigo-100 hover:from-blue-600 hover:to-indigo-600 text-blue-700 hover:text-white py-2 px-3 rounded-xl flex items-center gap-1.5 font-semibold transition-all">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+                Compartir
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.viewClient = function(id) {
+      state.selectedProjectId = id;
+      state.activeView = 'client';
+      showClientView();
+      loadClientProject(id);
+    };
+
+    window.copyLink = function(projectId) {
+      const link = `${window.location.origin}${window.location.pathname}?proyectoId=${projectId}`;
+      const tempInput = document.createElement('input');
+      tempInput.value = link;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      showToast('¡Enlace único copiado!');
+      addLog('UI', `Enlace compartido copiado al portapapeles: ${link}`, 'SUCCESS');
+    };
+
+    window.deleteProject = async function(projectId) {
+      try {
+        const { error } = await appSupabase.from('projects').delete().eq('id', projectId);
+        if (error) throw error;
+        state.projects = state.projects.filter(p => p.id !== projectId);
+        renderProjects();
+        showToast('Informe eliminado correctamente');
+        addLog('Supabase', 'Proyecto eliminado', 'SUCCESS');
+      } catch (error) {
+        showToast('Error al eliminar', 'error');
+        addLog('Supabase', `Error al eliminar proyecto: ${error.message}`, 'ERROR');
+      }
+    };
+
+    function toggleView() {
+      if (state.activeView === 'create') {
+        state.activeView = 'history';
+        elements.btnToggleText.textContent = 'Crear Informe';
+        elements.createView.classList.add('hidden');
+        elements.historyView.classList.remove('hidden');
+        elements.clientView.classList.add('hidden');
+      } else if (state.activeView === 'history') {
+        state.activeView = 'create';
+        elements.btnToggleText.textContent = 'Ver Historial';
+        elements.createView.classList.remove('hidden');
+        elements.historyView.classList.add('hidden');
+        elements.clientView.classList.add('hidden');
+      } else {
+        state.activeView = 'history';
+        elements.btnToggleText.textContent = 'Crear Informe';
+        elements.createView.classList.add('hidden');
+        elements.historyView.classList.remove('hidden');
+        elements.clientView.classList.add('hidden');
+      }
+    }
+
+    function showClientView() {
+      elements.createView.classList.add('hidden');
+      elements.historyView.classList.add('hidden');
+      elements.clientView.classList.remove('hidden');
+      elements.btnToggleText.textContent = 'Volver';
+    }
+
+    async function loadClientProject(id) {
+      elements.clientLoading.classList.remove('hidden');
+      elements.clientContent.classList.add('hidden');
+      elements.clientNotFound.classList.add('hidden');
+      elements.clientMeta.classList.add('hidden');
+      elements.clientProjectTitle.textContent = 'Cargando datos...';
+      elements.clientProjectId.textContent = id;
+      addLog('Cliente View', `Solicitando lectura de proyecto: ${id}`, 'INFO');
+      try {
+        const { data, error } = await appSupabase.from('projects').select('*').eq('id', id).single();
+        if (error) throw error;
+        if (data) {
+          setTimeout(() => renderClientProject(data), 400);
+        } else {
+          elements.clientLoading.classList.add('hidden');
+          elements.clientNotFound.classList.remove('hidden');
+          addLog('Cliente View', 'Proyecto no encontrado', 'ERROR');
+        }
+      } catch (error) {
+        elements.clientLoading.classList.add('hidden');
+        elements.clientNotFound.classList.remove('hidden');
+        addLog('Cliente View', `Error al cargar proyecto: ${error.message}`, 'ERROR');
+      }
+    }
+
+    function renderClientProject(project) {
+      elements.clientLoading.classList.add('hidden');
+      elements.clientContent.classList.remove('hidden');
+      elements.clientMeta.classList.remove('hidden');
+      elements.clientProjectTitle.textContent = project.project_title;
+      elements.clientNameText.textContent = project.client_name;
+      elements.clientDate.textContent = new Date(project.created_at).toLocaleDateString('es-ES');
+      elements.clientReport.textContent = project.report_text;
+      if (project.photos && project.photos.length > 0) {
+        elements.clientPhotos.innerHTML = project.photos.map((url, idx) => `
+          <div class="aspect-square rounded-2xl overflow-hidden border border-slate-700 group relative">
+            <img src="${url}" class="w-full h-full object-cover transition-all duration-300 group-hover:scale-105" alt="Evidencia ${idx + 1}" />
+            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center gap-2">
+              <button onclick="openLightbox('${url}')" class="bg-white/20 hover:bg-white/30 text-white text-xs font-semibold py-2 px-4 rounded-xl backdrop-blur-sm transition-all">
+                👁️ Ver
+              </button>
+              <button onclick="downloadImage('${url}', ${idx})" class="bg-emerald-600/80 hover:bg-emerald-700 text-white text-xs font-semibold py-2 px-4 rounded-xl transition-all">
+                ⬇️ Descargar
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        elements.clientPhotos.innerHTML = '<p class="text-sm text-slate-500 col-span-full text-center py-8">No hay fotos adjuntas en este informe</p>';
+      }
+      addLog('Cliente View', 'Proyecto cargado exitosamente', 'SUCCESS');
+    }
+
+    window.openLightbox = function(url) {
+      elements.lightboxImg.src = url;
+      elements.lightbox.classList.remove('hidden');
+    };
+
+    window.downloadImage = async function(url, idx) {
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `evidencia_${idx + 1}.jpg`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        showToast('Imagen descargada');
+      } catch (error) {
+        showToast('Error al descargar', 'error');
+      }
+    };
+
+    async function startCamera() {
+      state.cameraError = null;
+      elements.cameraError.classList.add('hidden');
+      elements.cameraOff.classList.add('hidden');
+      addLog('Cámara Nativa', 'Iniciando cámara en calidad Full HD...', 'INFO');
+      if (state.stream) stopCamera();
+      try {
+        const constraints = {
+          video: {
+            facingMode: state.facingMode,
+            width: { ideal: 1920, min: 1280, max: 4096 },
+            height: { ideal: 1080, min: 720, max: 2160 },
+            advanced: [
+              { width: 1920, height: 1080 },
+              { width: 2560, height: 1440 },
+              { width: 1280, height: 720 }
+            ]
+          },
+          audio: false
+        };
+        state.stream = await navigator.mediaDevices.getUserMedia(constraints);
+        elements.video.srcObject = state.stream;
+        elements.cameraOn.classList.remove('hidden');
+        state.cameraActive = true;
+        addLog('Cámara Nativa', 'Cámara iniciada en calidad Full HD máxima', 'SUCCESS');
+      } catch (err) {
+        state.cameraError = 'No se pudo acceder a la cámara. Por favor comprueba los permisos de tu navegador.';
+        elements.cameraError.textContent = state.cameraError;
+        elements.cameraError.classList.remove('hidden');
+        elements.cameraOff.classList.remove('hidden');
+        elements.cameraOn.classList.add('hidden');
+        addLog('Cámara Error', err.message, 'ERROR');
+      }
+    }
+
+    function stopCamera() {
+      if (state.stream) {
+        state.stream.getTracks().forEach(track => track.stop());
+        state.stream = null;
+      }
+      elements.video.srcObject = null;
+      elements.cameraOn.classList.add('hidden');
+      elements.cameraOff.classList.remove('hidden');
+      state.cameraActive = false;
+    }
+
+    function toggleFacingMode() {
+      state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
+      addLog('Cámara', `Cambiando dirección de lente a: ${state.facingMode === 'user' ? 'Delantero' : 'Trasero'}`, 'INFO');
+      if (state.cameraActive) startCamera();
+    }
+
+    function capturePhoto() {
+      if (!elements.video || !elements.canvas) return;
+      elements.flash.classList.remove('hidden');
+      setTimeout(() => elements.flash.classList.add('hidden'), 200);
+      const video = elements.video;
+      const canvas = elements.canvas;
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const base64Image = canvas.toDataURL('image/jpeg', 0.95);
+      const estimatedSizeKB = Math.round((base64Image.length * 3) / 4 / 1024);
+      const photoName = `CAP_CAM_${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`;
+      state.imageFiles.push({
+        id: 'cam-' + Date.now(),
+        name: photoName,
+        size: `${estimatedSizeKB} KB`,
+        base64: base64Image
+      });
+      renderImages();
+      addLog('Cámara Captura', `Foto capturada en alta calidad: ${photoName} (${estimatedSizeKB} KB)`, 'SUCCESS');
+      showToast('¡Foto capturada en alta calidad!');
+    }
+
+    function handleFilesSelected(files) {
+      Array.from(files).forEach(file => {
+        if (!file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          state.imageFiles.push({
+            id: 'file-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+            name: file.name,
+            size: `${(file.size / 1024).toFixed(1)} KB`,
+            base64: reader.result
+          });
+          renderImages();
+          addLog('Archivo Cargado', `Imagen local agregada: ${file.name}`, 'INFO');
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function toggleCredentials() {
+      state.credentialsVisible = !state.credentialsVisible;
+      if (state.credentialsVisible) {
+        elements.realModeConfig.classList.remove('hidden');
+        elements.supabaseUrlInput.value = state.supabaseUrl;
+        elements.supabaseKeyInput.value = state.supabaseKey;
+      } else {
+        elements.realModeConfig.classList.add('hidden');
+      }
+    }
+
+    function saveCredentials() {
+      state.supabaseUrl = elements.supabaseUrlInput.value.trim();
+      state.supabaseKey = elements.supabaseKeyInput.value.trim();
+      localStorage.setItem('supabase_url', state.supabaseUrl);
+      localStorage.setItem('supabase_key', state.supabaseKey);
+      appSupabase = window.supabase.createClient(state.supabaseUrl, state.supabaseKey);
+      showToast('¡Credenciales guardadas exitosamente!', 'success');
+      addLog('Credenciales', 'Credenciales guardadas en localStorage', 'SUCCESS');
+      autoConnectSupabase();
+    }
+
+    async function testConnection() {
+      const url = elements.supabaseUrlInput.value.trim();
+      const key = elements.supabaseKeyInput.value.trim();
+      if (!url || !key) {
+        showToast('Por favor completa ambos campos', 'error');
+        return;
+      }
+      addLog('Supabase', 'Probando conexión con nuevas credenciales...', 'INFO');
+      try {
+        const testClient = window.supabase.createClient(url, key);
+        const { data, error } = await testClient.from('projects').select('count', { count: 'exact', head: true });
+        if (error) throw error;
+        state.supabaseUrl = url;
+        state.supabaseKey = key;
+        localStorage.setItem('supabase_url', state.supabaseUrl);
+        localStorage.setItem('supabase_key', state.supabaseKey);
+        appSupabase = testClient;
+        updateConnectionStatus('connected');
+        showToast('¡Conexión exitosa!', 'success');
+        addLog('Supabase', 'Conexión verificada exitosamente', 'SUCCESS');
+        loadProjects();
+      } catch (error) {
+        updateConnectionStatus('disconnected', error.message);
+        showToast(`Error de conexión: ${error.message}`, 'error');
+        addLog('Supabase', `Error al probar conexión: ${error.message}`, 'ERROR');
+      }
+    }
+
+    async function uploadProject() {
+      const clientName = elements.clientNameInput.value.trim();
+      const projectTitle = elements.projectTitleInput.value.trim();
+      const reportText = elements.reportTextInput.value.trim();
+      if (!clientName || !projectTitle) {
+        showToast('Por favor completa el nombre del cliente y título del proyecto', 'error');
+        return;
+      }
+      if (state.isUploading) return;
+      state.isUploading = true;
+      elements.btnUpload.disabled = true;
+      elements.btnUpload.innerHTML = '<svg class="w-5 h-5 animate-spin-custom" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> Subiendo...';
+      addLog('Upload', 'Iniciando proceso de carga...', 'INFO');
+      try {
+        const photoUrls = [];
+        for (let i = 0; i < state.imageFiles.length; i++) {
+          const img = state.imageFiles[i];
+          const base64Data = img.base64.split(',')[1];
+          const fileExt = img.name.split('.').pop() || 'jpg';
+          const fileName = `${Date.now()}-${i}.${fileExt}`;
+          const { data, error } = await appSupabase.storage.from('project-photos').upload(fileName, Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)), { contentType: `image/${fileExt}`, cacheControl: '3600', upsert: false });
+          if (error) throw error;
+          const { data: { publicUrl } } = appSupabase.storage.from('project-photos').getPublicUrl(data.path);
+          photoUrls.push(publicUrl);
+        }
+        const { data: projectData, error: projectError } = await appSupabase.from('projects').insert({
+          client_name: clientName,
+          project_title: projectTitle,
+          report_text: reportText,
+          photos: photoUrls,
+          created_at: new Date().toISOString()
+        }).select();
+        if (projectError) throw projectError;
+        const newProject = projectData[0];
+        state.projects.unshift(newProject);
+        renderProjects();
+        elements.clientNameInput.value = '';
+        elements.projectTitleInput.value = '';
+        elements.reportTextInput.value = '';
+        state.imageFiles = [];
+        renderImages();
+        copyLink(newProject.id);
+        showToast('¡Proyecto guardado exitosamente!', 'success');
+        addLog('Upload', 'Proyecto guardado exitosamente', 'SUCCESS');
+      } catch (error) {
+        showToast(`Error al guardar: ${error.message}`, 'error');
+        addLog('Upload', `Error: ${error.message}`, 'ERROR');
+      } finally {
+        state.isUploading = false;
+        elements.btnUpload.disabled = false;
+        elements.btnUpload.innerHTML = '💾 Guardar y Generar Enlace Único';
+      }
+    }
+
+    function exportPdf() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFontSize(18);
+      doc.text('Informe Técnico', 105, 20, { align: 'center' });
+      doc.setFontSize(12);
+      doc.text(`Cliente: ${elements.clientNameText.textContent}`, 20, 40);
+      doc.text(`Proyecto: ${elements.clientProjectTitle.textContent}`, 20, 50);
+      doc.text(`Fecha: ${elements.clientDate.textContent}`, 20, 60);
+      doc.setFontSize(11);
+      const splitText = doc.splitTextToSize(elements.clientReport.textContent, 170);
+      doc.text(splitText, 20, 75);
+      doc.save('informe_tecnico.pdf');
+      showToast('PDF exportado');
+    }
+
+    function exportWord() {
+      const content = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+          <head><meta charset='utf-8'><title>Informe Técnico</title></head>
+          <body>
+            <h1>Informe Técnico</h1>
+            <p><strong>Cliente:</strong> ${elements.clientNameText.textContent}</p>
+            <p><strong>Proyecto:</strong> ${elements.clientProjectTitle.textContent}</p>
+            <p><strong>Fecha:</strong> ${elements.clientDate.textContent}</p>
+            <h2>Descripción</h2>
+            <p>${elements.clientReport.textContent.replace(/\n/g, '<br>')}</p>
+          </body>
+        </html>
+      `;
+      const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'informe_tecnico.doc';
+      link.click();
+      URL.revokeObjectURL(link.href);
+      showToast('Documento Word exportado');
+    }
+
+    function exportTxt() {
+      const content = `Informe Técnico\nCliente: ${elements.clientNameText.textContent}\nProyecto: ${elements.clientProjectTitle.textContent}\nFecha: ${elements.clientDate.textContent}\n\nDescripción:\n${elements.clientReport.textContent}`;
+      const blob = new Blob([content], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'informe_tecnico.txt';
+      link.click();
+      URL.revokeObjectURL(link.href);
+      showToast('TXT exportado');
+    }
+
+    function init() {
+      elements.year.textContent = new Date().getFullYear();
+      elements.btnToggleView.addEventListener('click', toggleView);
+      elements.btnDevice.addEventListener('click', () => {
+        state.imageSource = 'device';
+        elements.btnDevice.classList.add('bg-gradient-to-r', 'from-blue-500', 'to-indigo-600', 'text-white');
+        elements.btnDevice.classList.remove('text-slate-600');
+        elements.btnCamera.classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-indigo-600', 'text-white');
+        elements.btnCamera.classList.add('text-slate-600');
+        elements.deviceArea.classList.remove('hidden');
+        elements.cameraArea.classList.add('hidden');
+      });
+      elements.btnCamera.addEventListener('click', () => {
+        state.imageSource = 'camera';
+        elements.btnCamera.classList.add('bg-gradient-to-r', 'from-blue-500', 'to-indigo-600', 'text-white');
+        elements.btnCamera.classList.remove('text-slate-600');
+        elements.btnDevice.classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-indigo-600', 'text-white');
+        elements.btnDevice.classList.add('text-slate-600');
+        elements.cameraArea.classList.remove('hidden');
+        elements.deviceArea.classList.add('hidden');
+      });
+      elements.fileDrop.addEventListener('click', () => elements.fileInput.click());
+      elements.fileInput.addEventListener('change', (e) => handleFilesSelected(e.target.files));
+      elements.btnStartCamera.addEventListener('click', startCamera);
+      elements.btnStopCamera.addEventListener('click', stopCamera);
+      elements.btnSwitchCamera.addEventListener('click', toggleFacingMode);
+      elements.btnCapture.addEventListener('click', capturePhoto);
+      elements.btnToggleCredentials.addEventListener('click', toggleCredentials);
+      elements.btnSaveCredentials.addEventListener('click', saveCredentials);
+      elements.btnTestConnection.addEventListener('click', testConnection);
+      elements.btnUpload.addEventListener('click', uploadProject);
+      elements.btnClearLogs.addEventListener('click', () => { state.logs = []; renderLogs(); });
+      elements.lightbox.addEventListener('click', () => elements.lightbox.classList.add('hidden'));
+      elements.btnExportPdf.addEventListener('click', exportPdf);
+      elements.btnExportWord.addEventListener('click', exportWord);
+      elements.btnExportTxt.addEventListener('click', exportTxt);
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const proyectoId = urlParams.get('proyectoId');
+      const accion = urlParams.get('accion');
+      if (proyectoId) {
+        state.selectedProjectId = proyectoId;
+        state.activeView = 'client';
+        showClientView();
+        loadClientProject(proyectoId);
+      } else if (accion === 'historial') {
+        toggleView();
+      }
+
+      autoConnectSupabase();
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(error => console.log('SW registration failed:', error));
+        });
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
+  `;
+    }
+  }
+}
